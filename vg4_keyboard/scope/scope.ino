@@ -1,13 +1,13 @@
-#include <Arduino_DebugUtils.h>
-
 // Silly little oscilloscope.
 
-int analogPin = A3; // potentiometer wiper (middle terminal) connected to analog pin 3
+// potentiometer wiper (middle terminal) connected to analog pin 3
 // outside leads to ground and +5V
+int analogPin = A3; 
 int val = 0;  // variable to store the value read
+
 void setup() {
   Serial.begin(9600);
-  Serial.println("hi");
+  Serial.println("Hello scope");
 }
 
 void loop() {
