@@ -44,7 +44,7 @@ void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
     Serial.println("on");
     shouldRead = 1 - shouldRead;
-    Serial.println("ShouldRead is " + shouldRead);
+    Serial.print("ShouldRead is "); Serial.println(shouldRead);
     changed = 1;
   } else if (buttonState == LOW && changed) {
     // turn LED off:
