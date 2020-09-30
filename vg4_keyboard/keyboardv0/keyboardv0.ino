@@ -3,11 +3,10 @@
    Records 8 bits at 110 baud.
 */
 
-const int dataPin = 2;      // corresponds to pin 6 on the KB connector (and pin 6 of the RJ12)
-const int resetPin = 5;     // corresponds to pin 2 on the KB connector (and pin 4 on the RJ12)
+const int dataPin = 2;      // pin 6 on the KB connector (and pin 6 of the RJ12)
+const int resetPin = 5;     // pin 2 on the KB connector (and pin 4 on the RJ12)
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(resetPin, OUTPUT);
   pinMode(dataPin, INPUT);
 
@@ -20,30 +19,32 @@ void setup() {
   Serial.println("Hello logic_analyzer");
 }
 
-// Microseconds to wait between bits
+// Microseconds to wait between bits. Corresponds to 110 baud.
 const int baudDelay = 3333;
+int allData[9];
 
 void loop() {
   int data = digitalRead(dataPin);
   if (data == LOW) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    //    Serial.print("START: ");
     int index = 0;
-    int allData[9];
     int theKey = 0;
+
     // Wait half a cycle so that we're sampling in the middle of the bit.
     delayMicroseconds(baudDelay / 2);
     while (index <= 8) {
       data = digitalRead(dataPin);
+
       allData[index++] = data;
+      // Shift right and possibly shift in a 1.
+      theKey >>= 1;
       if (data == HIGH) {
-        theKey = (theKey >> 1) | 0x80;
-      } else {
-        theKey = (theKey >> 1);
+        theKey = theKey | 0x80;
       }
+
       // Wait for the next bit
       delayMicroseconds(baudDelay);
     }
+
     Serial.print("YOU TYPED: ");
     Serial.print((char)theKey);
     Serial.print(" ("); Serial.print(theKey); Serial.print("=0b");
@@ -51,6 +52,5 @@ void loop() {
       Serial.print(allData[i]);
     }
     Serial.println(")");
-    digitalWrite(LED_BUILTIN, LOW);
   }
 }
