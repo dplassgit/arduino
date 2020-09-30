@@ -16,7 +16,7 @@ void setup() {
   digitalWrite(resetPin , HIGH);
 
   Serial.begin(9600);
-  Serial.println("Hello logic_analyzer");
+  Serial.println("Hello keyboardv0");
 }
 
 // Microseconds to wait between bits. Corresponds to 110 baud.
