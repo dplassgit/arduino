@@ -6,8 +6,6 @@
 const int dataPin = 2;      // corresponds to pin 6 on the KB connector (and pin 6 of the RJ12)
 const int resetPin = 5;     // corresponds to pin 2 on the KB connector (and pin 4 on the RJ12)
 
-int changed = 0;
-
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(resetPin, OUTPUT);
@@ -22,32 +20,47 @@ void setup() {
   Serial.println("Hello logic_analyzer");
 }
 
+const int baudDelay=3333;
 int data = 0;
-int inKey = 0;  // are we reading a key?
-int numOnes = 0;  // the # of 1s in a row
 
 void loop() {
   data = digitalRead(dataPin);
-  if (data == LOW && !inKey) {
-    inKey = 1; // we're recording until numones==30
-    numOnes = 0;
-    Serial.println("START");
-    Serial.print(micros()); Serial.print(", 0,  ");
+  if (data == LOW) {
+    int numOnes = 0;
     digitalWrite(LED_BUILTIN, HIGH);
-  } else if (inKey) {
-    if (data == HIGH) {
-      Serial.print(micros()); Serial.print(", 1,  ");
-      numOnes++;
-      if (numOnes == 30) {
-        inKey = 0;
+//    Serial.print("START: ");
+  //  unsigned long started = micros();
+    // Serial.print(0); Serial.print(", 0,  ");
+    int index = 0;
+    int allData[9];
+    int theKey=0;
+    delayMicroseconds(baudDelay/2);
+    while (index <= 8) {
+     // unsigned long now = micros();
+      data = digitalRead(dataPin);
+      //      Serial.print(now - started);
+      allData[index++] = data;
+      if (data == HIGH) {
+        theKey = (theKey>>1)|0x80;
+        //Serial.print(", 1,  ");
+        //Serial.print(1);
+        numOnes++;
+      } else {
+        theKey = (theKey>>1);
         numOnes = 0;
-        digitalWrite(LED_BUILTIN, LOW);
-        Serial.println("END");
-        delay(500);
+        //        Serial.print(", 0,  ");
+        //Serial.print(0);
       }
-    } else {
-      numOnes = 0;
-      Serial.print(micros()); Serial.print(", 0,  ");
+      delayMicroseconds(baudDelay);
     }
+    Serial.print("TYPED: ");
+    Serial.print((char)theKey);
+    Serial.print(" (");
+    for (int i = 0; i < index; ++i) {
+      Serial.print(allData[i]); 
+    }
+    Serial.println(")");
+    digitalWrite(LED_BUILTIN, LOW);
+//    Serial.println("END");
   }
 }
