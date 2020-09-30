@@ -18,7 +18,7 @@ void setup() {
   delay(10);
   digitalWrite(resetPin , HIGH);
 
-  Serial.begin(9600);
+  Serial.begin(1000000);
   Serial.println("Hello logic_analyzer");
 }
 
@@ -32,11 +32,11 @@ void loop() {
     inKey = 1; // we're recording until numones==30
     numOnes = 0;
     Serial.println("START");
-    Serial.println("0");
+    Serial.print(micros()); Serial.print(", 0,  ");
     digitalWrite(LED_BUILTIN, HIGH);
   } else if (inKey) {
     if (data == HIGH) {
-      Serial.println("1");
+      Serial.print(micros()); Serial.print(", 1,  ");
       numOnes++;
       if (numOnes == 30) {
         inKey = 0;
@@ -47,7 +47,7 @@ void loop() {
       }
     } else {
       numOnes = 0;
-      Serial.println("0");
+      Serial.print(micros()); Serial.print(", 0,  ");
     }
   }
 }
