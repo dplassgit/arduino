@@ -19,8 +19,8 @@ void setup() {
   Serial.println("Hello keyboardv0");
 }
 
-// Microseconds to wait between bits. Corresponds to 110 baud.
-const int baudDelay = 3333;
+// Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
+const int baudDelay = 3387;
 int allData[9];
 
 void loop() {
