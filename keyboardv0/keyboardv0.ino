@@ -23,8 +23,8 @@ void setup() {
   pinMode(dPin, INPUT);
   DDRB |= B00000001;// make pin 8 an output.
 
-  Serial.begin(1000000);
-  Serial.println("Hello keyboard v0");
+  Serial.begin(9600);
+  Serial.println("Hello keyboard send pin 15");
 
   digitalWrite(fakeColumn, LOW);
   // Set the reset pin low for 10 ms.
@@ -46,21 +46,39 @@ int printed = 0;
 void intHandler() {
   // read pins a,b,c,d at the same time.
   int allPins = PIND & B01110100;
+  int a = (allPins & B00010000) >> 4,
+      b = (allPins & B00100000) >> 5,
+      c = (allPins & B01000000) >> 6,
+      d = (allPins & B00000100) >> 2;
+  if (printed == 1000) {
+    Serial.print("int "); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d);
+    if (a == 1 && b == 1 && c == 0 && d == 0) {
+      Serial.print("allpins should match:"); Serial.println(allPins, BIN);
+    }
+    printed = 0;
+  } else printed++;
 
-  if (allPins == B01000000) {
-    // pin 16 (Y4) = 0010
-    PORTB = B00000001;
-    // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
-    __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
-    PORTB = B00000000;
-  }
-  //  if (allPins == B00000000) {
-  //    // pin 12 (Y0) = 0000
+  //  if (allPins == B01000000) {
+  //    // pin 16 (Y4) = 0010
   //    PORTB = B00000001;
   //    // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
   //    __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
   //    PORTB = B00000000;
   //  }
+  //    if (allPins == B00000000) {
+  //      // pin 12 (Y0) = 0000
+  //      PORTB = B00000001;
+  //      // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
+  //      __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
+  //      PORTB = B00000000;
+  //    }
+  if (allPins == B00110000) {
+    // pin 15 (Y3) = 1100 (ABCD)
+    PORTB = B00000001;
+    // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
+    __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
+    PORTB = B00000000;
+  }
 }
 
 void loop() {
