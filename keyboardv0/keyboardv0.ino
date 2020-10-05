@@ -32,7 +32,7 @@ void setup() {
   delay(10);
   digitalWrite(resetPin , HIGH);
 
-  attachInterrupt(digitalPinToInterrupt(outputEnabledPin), intHandler, RISING);
+  attachInterrupt(digitalPinToInterrupt(outputEnabledPin), intHandler, FALLING);
 }
 
 // Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
@@ -58,21 +58,27 @@ void intHandler() {
     printed = 0;
   } else printed++;
 
-  //  if (allPins == B01000000) {
-  //    // pin 16 (Y4) = 0010
-  //    PORTB = B00000001;
-  //    // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
-  //    __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
-  //    PORTB = B00000000;
-  //  }
-  //    if (allPins == B00000000) {
-  //      // pin 12 (Y0) = 0000
-  //      PORTB = B00000001;
-  //      // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
-  //      __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
-  //      PORTB = B00000000;
-  //    }
+//    if (allPins == B01000000) {
+//      // THis works, restores AZXCV, space
+//      // pin 16 (Y4) = 0010
+//      PORTB = B00000001;
+//      // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
+//      __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
+//      PORTB = B00000000;
+//    }
+//      if (allPins == B00000000) {
+//        // This mostly works. Restores shift, ctrl, caps lock. Erratic behavior sometimes.
+//        // pin 12 (Y0) = 0000
+//        PORTB = B00000001;
+//        // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
+//        __asm__("nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t");
+//        PORTB = B00000000;
+//      }
   if (allPins == B00110000) {
+    if (printed == 0) {
+          Serial.println("A15");
+    }
+    // This iddn't work at all. supposed to restore enter etc.
     // pin 15 (Y3) = 1100 (ABCD)
     PORTB = B00000001;
     // one nop = 62.5ns. need it to be 1.4 microseconds = 22ish
