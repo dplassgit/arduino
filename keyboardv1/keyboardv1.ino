@@ -15,7 +15,6 @@ void setup() {
 
   Serial.begin(9600);
   Serial.println("Hello keyboard passthrough");
-  // Keyboard.begin();
 
   // Set the reset pin low for 10 ms.
   digitalWrite(resetPin, LOW);
@@ -117,6 +116,14 @@ void loop() {
     delayMicroseconds(baudDelay / 2);
 
     char key = getChar();
+    int theKey = (int)key;
+    Serial.print("Raw char: ");
+    Serial.print(key);
+    Serial.print(" (decimal "); Serial.print(theKey); Serial.print(" =0b");
+    for (int i = 7; i >= 0; i--) {
+      Serial.write(bitRead(theKey, i));
+    }
+    Serial.println(")");
     sendChar(key);
   }
 }
@@ -136,15 +143,7 @@ char getChar() {
     delayMicroseconds(baudDelay);
   }
 
-  char keyChar = (char)theKey;
-  Serial.print(keyChar);
-  Serial.print(" (dec "); Serial.print(theKey); Serial.print(" =0b");
-  for (int i = 7; i >= 0; i--) {
-   Serial.write(bitRead(theKey, i));
-  }
-  Serial.println(")");
-
-  return keyChar;
+  return (char) theKey;
 }
 
 bool nextIsAlt = false;
@@ -154,24 +153,30 @@ void sendChar(char key) {
   // Figure out what to do with the key
   // 	* printable characters just get returned.
   // 	* control characters: ctrl + letter
-  //    * numpad needs to get translated
-  //    * HELP is ??? (192)
-  //    * F1 (193)-F12 (204) need to be translated
   //    * F13 is "send next char as "alt""
   //    * F14 is "numLock toggle"
+  //    * Other characters are translated.
   if (key >= ' ' && i <= '~') {
     if (nextIsAlt) {
       Serial.print("Alt+"); Serial.println(key);
+      // Keyboard.begin();
       // Keyboard.press(KEY_ALT)
       // Keyboard.press(key);
+      // delay(100);// I've seen this elsewhere. sometimes 20 ms
       // Keyboard.releaseAll();
+      // Keyboard.end();
       nextIsAlt = false;
       return;
     }
+
     Serial.print("Printable: "); Serial.println(key);
+    // Keyboard.begin();
+    // Keyboard.write(key);
+    // Keyboard.end();
     return;
   }
 
+  // TODO: think about alt+ctrl+char, and alt+ctrl+shift+char
   char translated;
   if (numLock) {
     translated = numLockTable[key];
@@ -188,16 +193,24 @@ void sendChar(char key) {
       Serial.print("F14: Toggling numlock "); Serial.println(numLock);
     } else if (key < ' ') {
       Serial.print("ctrl-"); Serial.println(key+64);
+      // Keyboard.begin();
       // Keyboard.press(KEY_LEFT_CTRL);
       // Keyboard.press(key + 64)
+      // delay(100);// I've seen this elsewhere. sometimes 20 ms
       // Keyboard.releaseAll();
+      // Keyboard.end();
     }
   } else if (translated >= ' ' && translated <= '~') {
-    Serial.print("Printable: "); Serial.print(translated); Serial.print("; was: "); Serial.print((int) key);
-    // Keyboard.print(translated);
+    Serial.print("Printable: "); Serial.print(translated); Serial.print("; was decimal: "); Serial.print((int) key);
+    // Keyboard.begin();
+    // Keyboard.write(translated);
+    // Keyboard.end();
   } else {
-    Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print("; was: "); Serial.print((int) key);
+    Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.print((int) key);
+    // Keyboard.begin();
     // Keyboard.press(key);
+    // delay(100);// I've seen this elsewhere. sometimes 20 ms
     // Keyboard.releaseAll();
+    // Keyboard.end();
   }
 }
