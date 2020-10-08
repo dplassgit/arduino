@@ -3,8 +3,8 @@
    Records 8 bits at 110 baud.
 */
 
-const int dataPin = 2;      // pin 6 on the KB connector (and pin 6 of the RJ12)
-const int resetPin = 5;     // pin 2 on the KB connector (and pin 4 on the RJ12)
+const int dataPin = 7;      // pin 6 on the KB connector (and pin 6 of the RJ12)
+const int resetPin = 9;     // pin 2 on the KB connector (and pin 4 on the RJ12)
 
 void setup() {
   pinMode(resetPin, OUTPUT);
