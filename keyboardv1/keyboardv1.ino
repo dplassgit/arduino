@@ -1,9 +1,43 @@
+#include <Keyboard.h>
+
+#ifndef KEY_F12
+#warning "Using fake keyboard settings"
+
+#define KEY_LEFT_CTRL   0x80
+#define KEY_LEFT_ALT    0x82
+
+#define KEY_UP_ARROW    0xDA
+#define KEY_DOWN_ARROW    0xD9
+#define KEY_LEFT_ARROW    0xD8
+#define KEY_RIGHT_ARROW   0xD7
+#define KEY_BACKSPACE   0xB2
+#define KEY_TAB       0xB3
+#define KEY_RETURN      0xB0
+#define KEY_ESC       0xB1
+#define KEY_INSERT      0xD1
+#define KEY_DELETE      0xD4
+#define KEY_PAGE_UP     0xD3
+#define KEY_PAGE_DOWN   0xD6
+#define KEY_HOME      0xD2
+#define KEY_END       0xD5
+#define KEY_F1        0xC2
+#define KEY_F2        0xC3
+#define KEY_F3        0xC4
+#define KEY_F4        0xC5
+#define KEY_F5        0xC6
+#define KEY_F6        0xC7
+#define KEY_F7        0xC8
+#define KEY_F8        0xC9
+#define KEY_F9        0xCA
+#define KEY_F10       0xCB
+#define KEY_F11       0xCC
+#define KEY_F12       0xCD
+#endif
+
 /*
    Simple keyboard interface. Triggers when the data pin goes low.
    Records 8 bits at 110 baud and looks up the value to send back.
 */
-
-#include <keyboard.h>
 
 const int dataPin = 7;      // pin 6 on the KB connector (and pin 6 of the RJ12)
 const int resetPin = 9;     // pin 2 on the KB connector (and pin 4 on the RJ12)
@@ -22,8 +56,8 @@ void setup() {
   digitalWrite(resetPin, HIGH);
 }
 
-char translationTable[256];
-char numLockTable[256];
+byte translationTable[256];
+byte numLockTable[256];
 
 #define SPECIAL 255
 #define VG_F13 205
@@ -36,14 +70,16 @@ void setupTable() {
     if (i >= ' ' && i <= '~') {
       // Printable characters
       translationTable[i] = i;
-    } else if (i < ' '){
-      translationTable[i] = SPECIAL;  // Control characters, except for exceptions, below.
+    } else if (i < ' ') {
+      // Control characters, except for exceptions, below.
+      translationTable[i] = SPECIAL;
     } else {
-      translationTable[i] = ' ';  // initialize the whole table so defaults anything not mapped to space
+      // Initialize the whole table so defaults anything not mapped to space
+      translationTable[i] = ' ';
     }
-    numLockTable[i] = ' ';
-	}
-  
+    numLockTable[i] = translationTable[i];
+  }
+
   //translationTable[VG_BACKSPACE] = ;
   translationTable[8] = KEY_TAB;
   translationTable[13] = KEY_RETURN;
@@ -66,29 +102,13 @@ void setupTable() {
   translationTable[VG_F14] = SPECIAL;
 
   // translationTable[VG_UP] = KEY_UP_ARROW;
-  // translationTable[VG_DOWN] = KEY_DOWN_ARROW; 
-  // translationTable[VG_LEFT] = KEY_LEFT_ARROW; 
+  // translationTable[VG_DOWN] = KEY_DOWN_ARROW;
+  // translationTable[VG_LEFT] = KEY_LEFT_ARROW;
   // translationTable[VG_RIGHT] = KEY_RIGHT_ARROW;
   // translationTable[VG_NP_ENTER] = KEY_RETURN;
 
-  // Numlock:
-  numLockTable[VG_NP0] = '0';
-  // TODO: NP1-9, enter, comma, dash, up, down, left, right
-  // numLockTable[VG_NP_1] = '1';
-  // numLockTable[VG_NP_2] = '2';
-  // numLockTable[VG_NP_3] = '3';
-  // numLockTable[VG_NP_4] = '4';
-  // numLockTable[VG_NP_5] = '5';
-  // numLockTable[VG_NP_6] = '6';
-  // numLockTable[VG_NP_7] = '7'; 
-  // numLockTable[VG_NP_8] = '8'; 
-  // numLockTable[VG_NP_9] = '9';
-  // numLockTable[VG_NP_COMMA] = ','; 
-  numLockTable[VG_NP_DOT] = '.'; // NP DOT
-  // numlockTable[VG_NP_MINUS] = '-';
-
   // Numlock off: cursor keys:
-  translationTable[VG_NP0] = KEY_INS;
+  translationTable[VG_NP0] = KEY_INSERT;
   // translationTable{VG_NP_1] = KEY_END;
   // translationTable{VG_NP_2] = KEY_DOWN_ARROW;
   // translationTable{VG_NP_3] = KEY_PAGE_DOWN;
@@ -98,9 +118,28 @@ void setupTable() {
   // translationTable{VG_NP_7] = KEY_HOME;
   // translationTable{VG_NP_8] = KEY_UP_ARROW;
   // translationTable{VG_NP_9] = KEY_PAGE_UP;
-  // translationTable[VG_NP_COMMA] = ','; 
+  // translationTable[VG_NP_COMMA] = ',';
   translationTable[VG_NP_DOT] = KEY_DELETE;
+
   // translationTable[VG_NP_MINUS] = '-';
+  for (int i = 0; i < 256; i++)  {
+    numLockTable[i] = translationTable[i];
+  }
+
+  // Numlock overrides:
+  numLockTable[VG_NP0] = '0';
+  // numLockTable[VG_NP_1] = '1';
+  // numLockTable[VG_NP_2] = '2';
+  // numLockTable[VG_NP_3] = '3';
+  // numLockTable[VG_NP_4] = '4';
+  // numLockTable[VG_NP_5] = '5';
+  // numLockTable[VG_NP_6] = '6';
+  // numLockTable[VG_NP_7] = '7';
+  // numLockTable[VG_NP_8] = '8';
+  // numLockTable[VG_NP_9] = '9';
+  // numLockTable[VG_NP_COMMA] = ',';
+  numLockTable[VG_NP_DOT] = '.';
+  // numlockTable[VG_NP_MINUS] = '-';
 }
 
 
@@ -111,27 +150,19 @@ const int baudDelay = 3387;
 void loop() {
   int data = digitalRead(dataPin);
   if (data == LOW) {
-
     // Wait half a cycle so that we're sampling in the middle of the bit.
     delayMicroseconds(baudDelay / 2);
 
-    char key = getChar();
-    int theKey = (int)key;
-    Serial.print("Raw char: ");
-    Serial.print(key);
-    Serial.print(" (decimal "); Serial.print(theKey); Serial.print(" =0b");
-    for (int i = 7; i >= 0; i--) {
-      Serial.write(bitRead(theKey, i));
-    }
-    Serial.println(")");
+    byte key = getChar();
+    Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
     sendChar(key);
   }
 }
 
-char getChar() {
+byte getChar() {
   int theKey = 0;
-  for (int i = 0; i < 8; ++i) {
-    data = digitalRead(dataPin);
+  for (int i = 0; i <= 8; ++i) {
+    int data = digitalRead(dataPin);
 
     // Shift right and possibly shift in a 1.
     theKey >>= 1;
@@ -143,22 +174,22 @@ char getChar() {
     delayMicroseconds(baudDelay);
   }
 
-  return (char) theKey;
+  return (byte) theKey;
 }
 
 bool nextIsAlt = false;
 bool numLock = false;
 
-void sendChar(char key) {
+void sendChar(byte key) {
   // Figure out what to do with the key
   // 	* printable characters just get returned.
   // 	* control characters: ctrl + letter
   //    * F13 is "send next char as "alt""
   //    * F14 is "numLock toggle"
   //    * Other characters are translated.
-  if (key >= ' ' && i <= '~') {
+  if (key >= ' ' && key <= '~') {
     if (nextIsAlt) {
-      Serial.print("Alt+"); Serial.println(key);
+      Serial.print("Alt+"); Serial.println((char) key);
       // Keyboard.begin();
       // Keyboard.press(KEY_ALT)
       // Keyboard.press(key);
@@ -169,7 +200,7 @@ void sendChar(char key) {
       return;
     }
 
-    Serial.print("Printable: "); Serial.println(key);
+    Serial.print("Printable: "); Serial.println((char) key);
     // Keyboard.begin();
     // Keyboard.write(key);
     // Keyboard.end();
@@ -177,7 +208,7 @@ void sendChar(char key) {
   }
 
   // TODO: think about alt+ctrl+char, and alt+ctrl+shift+char
-  char translated;
+  byte translated;
   if (numLock) {
     translated = numLockTable[key];
   } else {
@@ -192,7 +223,7 @@ void sendChar(char key) {
       numLock = !numLock;
       Serial.print("F14: Toggling numlock "); Serial.println(numLock);
     } else if (key < ' ') {
-      Serial.print("ctrl-"); Serial.println(key+64);
+      Serial.print("ctrl-"); Serial.println((char)(key + 64));
       // Keyboard.begin();
       // Keyboard.press(KEY_LEFT_CTRL);
       // Keyboard.press(key + 64)
@@ -200,13 +231,13 @@ void sendChar(char key) {
       // Keyboard.releaseAll();
       // Keyboard.end();
     }
-  } else if (translated >= ' ' && translated <= '~') {
-    Serial.print("Printable: "); Serial.print(translated); Serial.print("; was decimal: "); Serial.print((int) key);
+  } else if (translated > ' ' && translated <= '~') {
+    Serial.print("Printable: "); Serial.print((char) translated); Serial.print("; was decimal: "); Serial.println(key);
     // Keyboard.begin();
     // Keyboard.write(translated);
     // Keyboard.end();
   } else {
-    Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.print((int) key);
+    Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
     // Keyboard.begin();
     // Keyboard.press(key);
     // delay(100);// I've seen this elsewhere. sometimes 20 ms
