@@ -5,6 +5,9 @@
    for the broken pins on my XR22-950-3A.
 
    It's called "splint" because it only replicates part of the XR22-950 functionality.
+
+   See https://docs.google.com/spreadsheets/d/1VIy-GSjdG2L6Flt3NPSkQuhC4tW-Hb9asVCBoYnCuk4/edit
+   for the key matrix in spreadsheet form.
 */
 
 // This MUST be an interrupt-enabled pin.
