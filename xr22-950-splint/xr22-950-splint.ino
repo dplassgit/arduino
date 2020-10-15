@@ -5,39 +5,52 @@
    for the broken pins on my XR22-950-3A.
 
    It's called "splint" because it only replicates part of the XR22-950 functionality.
+
+   AND reads the data line
 */
 
 // This MUST be an interrupt-enabled pin.
 const int outputEnabledPin = 2;
 
-// Control (input) pins: PF4 (A) through PF7 (D), a.k.a A0 through A3
-// These aren't used because we need to use direct port manipulation to 
-// read all 4 pins at the same time.
-// const int aPin = A3;
-// const int bPin = A2;
-// const int cPin = A1;
-// const int dPin = A0;
+const int dataPin = A3;
+const int resetPin = A5;
 
-// Output pins are PB2 through PB6.
-// These aren't used because we need to use direct port manipulation to 
+// Input (control) pins are PD6 (D) through PD3 (A)
+// These aren't used because we need to use direct port manipulation to
+// read all 4 pins at the same time.
+//const int aPin = 3;
+//const int bPin = 4;
+//const int cPin = 5;
+//const int dPin = 6;
+
+// Output (splint) pins are PB0 (pin 8) through PB5 (pin 12)
+// These aren't used because we need to use direct port manipulation to
 // set the appropriate pin high for a very short duration, and digitalWrite
 // is too slow.
-// const int y0 = 16; // PB2, XR22-950 pin 12 (Y0)
-// const int y1 = 14; // PB3, XR22-950 pin 13 (Y1)
-// const int y2 = 8;  // PB4, XR22-950 pin 14 (Y2)
-// const int y3 = 9;  // PB5, XR22-950 pin 15 (Y3)
-// const int y4 = 10; // PB6, XR22-950 pin 16 (Y4)
+// const int y0 = 8; // PB2, XR22-950 pin 12 (Y0)
+// const int y1 = 9; // PB3, XR22-950 pin 13 (Y1)
+// const int y2 = 10;  // PB4, XR22-950 pin 14 (Y2)
+// const int y3 = 11;  // PB5, XR22-950 pin 15 (Y3)
+// const int y4 = 12; // PB6, XR22-950 pin 16 (Y4)
 
 void setup() {
+  pinMode(resetPin, OUTPUT);
+  pinMode(dataPin, INPUT);
+
+  // Set the reset pin low for 10 ms.
+  digitalWrite(resetPin , LOW);
+  delay(10);
+  digitalWrite(resetPin , HIGH);
+
   Serial.begin(9600);
-  Serial.println("Hello xr22-950");
+  Serial.println("Hello hybrid splint + keyboardv0");
 
   pinMode(outputEnabledPin, INPUT);
 
-  // Input (control) pins are PF4 (D) through PF7 (A)
-  DDRF = B00000000;
-  // Output (splint) pins are PB2 through PB6
-  DDRB |= B01111100;
+  // Input (control) pins are PD6 (D) through PD3 (A)
+  DDRD = B00000000;
+  // Output (splint) pins are PB0 (pin8) through PB5 (pin 12)
+  DDRB |= B00011111;
   // Set outputs to low
   PORTB = 0;
 
@@ -53,11 +66,11 @@ void setupSplintPins() {
     splintPins[i] = 0;
   }
 
-  splintPins[0] = B00000100; // PB2, XR22-950 Pin 12 (Y0). Restores shift, ctrl, caps lock. Erratic behavior on prototype.
-  splintPins[1] = B00001000; // PB3, XR22-950 Pin 13 (Y1): Should restore the right half of the numeric keypad. Untested as of yet.
-  splintPins[2] = B00010000; // PB4, XR22-950 Pin 14 (Y2): Should restore the left half of the numeric keypad. Untested as of yet.
-  splintPins[3] = B00100000; // PB5, XR22-950 Pin 15 (Y3). Should restore right third of keys (enter, backspace), etc. This didn't work at all; possibly wiring issues.
-  splintPins[4] = B01000000; // PB6, XR22-950 Pin 16 (Y4). Restores AZXCV, space. Worked on prototype.
+  splintPins[0] = B00000001; // PB2, XR22-950 Pin 12 (Y0). Restores shift, ctrl, caps lock. Erratic behavior on prototype.
+  splintPins[1] = B00000010; // PB3, XR22-950 Pin 13 (Y1): Should restore the right half of the numeric keypad. Works in this prototype.
+  splintPins[2] = B00000100; // PB4, XR22-950 Pin 14 (Y2): Should restore the left half of the numeric keypad. Works in this prototype.
+  splintPins[3] = B00001000; // PB5, XR22-950 Pin 15 (Y3). Should restore right third of keys (enter, backspace), etc. Works in this prototype.
+  splintPins[4] = B00010000; // PB6, XR22-950 Pin 16 (Y4). Restores AZXCV, space. Worked on prototype.
 }
 
 volatile int printed = 0; // debugging
@@ -67,9 +80,9 @@ volatile int printed = 0; // debugging
 
 void intHandler() {
   // Read pins a,b,c,d at the same time (upper 4 bits, then shift to the bottom nibble)
-  int controlPins = (PINF & B11110000) >> 4;
+  int controlPins = (PIND & B01111000) >> 3;
 
-  if (printed == 100) {
+  if (printed == 10000) {
     int a = (controlPins & B00000001),
         b = (controlPins & B00000010) >> 1,
         c = (controlPins & B00000100) >> 2,
@@ -81,8 +94,11 @@ void intHandler() {
     printed++;
   }
 
-  byte outputPins = splintPin[controlPins];
+  byte outputPins = splintPins[controlPins];
   if (outputPins != 0) {
+    if (printed == 0) {
+      //Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
+    }
     // Set all outputs on Port B
     PORTB = outputPins;
     __asm__(DELAY_14_US);
@@ -90,6 +106,40 @@ void intHandler() {
   }
 }
 
+// Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
+const int baudDelay = 3387;
+int allData[9];
+
 void loop() {
-  // Do nothing. All processing in the interript handler.
+  int data = digitalRead(dataPin);
+  if (data == LOW) {
+    noInterrupts();
+    int index = 0;
+    int theKey = 0;
+
+    // Wait half a cycle so that we're sampling in the middle of the bit.
+    delayMicroseconds(baudDelay / 2);
+    while (index <= 8) {
+      data = digitalRead(dataPin);
+
+      allData[index++] = data;
+      // Shift right and possibly shift in a 1.
+      theKey >>= 1;
+      if (data == HIGH) {
+        theKey = theKey | 0x80;
+      }
+
+      // Wait for the next bit
+      delayMicroseconds(baudDelay);
+    }
+
+    interrupts();
+    Serial.print("YOU TYPED: ");
+    Serial.print((char)theKey);
+    Serial.print(" ("); Serial.print(theKey); Serial.print("=0b");
+    for (int i = index - 1; i >= 0; i--) {
+      Serial.print(allData[i]);
+    }
+    Serial.println(")");
+  }
 }
