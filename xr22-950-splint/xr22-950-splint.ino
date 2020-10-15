@@ -72,7 +72,7 @@ void intHandler() {
   // Read pins a,b,c,d at the same time (upper 4 bits, then shift to the bottom nibble)
   int controlPins = (PINF & B11110000) >> 4;
 
-  if (printed == 100) {
+  if (printed == 10000) {
     int a = (controlPins & B00000001),
         b = (controlPins & B00000010) >> 1,
         c = (controlPins & B00000100) >> 2,
@@ -84,7 +84,7 @@ void intHandler() {
     printed++;
   }
 
-  byte outputPins = splintPin[controlPins];
+  byte outputPins = splintPins[controlPins];
   if (outputPins != 0) {
     // Set all outputs on Port B
     PORTB = outputPins;
@@ -94,5 +94,5 @@ void intHandler() {
 }
 
 void loop() {
-  // Do nothing. All processing in the interript handler.
+  // Do nothing. All processing is in the interrupt handler.
 }
