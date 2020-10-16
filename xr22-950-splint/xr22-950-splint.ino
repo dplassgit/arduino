@@ -6,7 +6,7 @@
 
    It's called "splint" because it only replicates part of the XR22-950 functionality.
 
-   AND reads the data line
+   This hybrid ALSO reads the data line for actual keys.
 */
 
 // This MUST be an interrupt-enabled pin.
@@ -75,34 +75,54 @@ void setupSplintPins() {
 
 volatile int printed = 0; // debugging
 
+// One nop is 62NS
+#define DELAY_62NS "nop\n\t"
+#define DELAY_124NS DELAY_62NS DELAY_62NS
+#define DELAY_248NS DELAY_124NS DELAY_124NS
+#define DELAY_496NS DELAY_248NS DELAY_248NS
+// Really 992/shrug
+#define DELAY_1US DELAY_496NS DELAY_496NS
+#define DELAY_2US DELAY_1US DELAY_1US
+#define DELAY_4US DELAY_2US DELAY_2US
+// Really 7936ns
+#define DELAY_8US DELAY_4US DELAY_4US
+
 // Delay 1.4 microseconds. One nop = 62.5ns, so we use 22 nops (1.375 us)
 #define DELAY_14_US "nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t"
+// delay 20 us was too long.
+// delay 12 was ok, but ctrl+shift still not working.
+#define DELAY_12_US DELAY_8US DELAY_4US
+#define DELAY_10_US DELAY_8US DELAY_2US
+
+#define DBG_COUNT 1000000
 
 void intHandler() {
   // Read pins a,b,c,d at the same time (upper 4 bits, then shift to the bottom nibble)
   int controlPins = (PIND & B01111000) >> 3;
 
-  if (printed == 10000) {
+  if (printed == DBG_COUNT) {
     int a = (controlPins & B00000001),
         b = (controlPins & B00000010) >> 1,
         c = (controlPins & B00000100) >> 2,
         d = (controlPins & B00001000) >> 3;
     // Debugging
     Serial.print("DCBA="); Serial.print(d); Serial.print(c); Serial.print(b); Serial.println(a);
-    printed = 0;
   } else {
     printed++;
   }
 
   byte outputPins = splintPins[controlPins];
   if (outputPins != 0) {
-    if (printed == 0) {
-      //Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
+    if (printed == DBG_COUNT) {
+      Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
     }
     // Set all outputs on Port B
     PORTB = outputPins;
-    __asm__(DELAY_14_US);
+    __asm__(DELAY_8US);
     PORTB = B00000000;
+  }
+  if (printed == DBG_COUNT) {
+    printed = 0;
   }
 }
 
