@@ -107,7 +107,7 @@ byte numLockTable[256];
 #define VG_NP_6 134
 #define VG_NP_7 135
 #define VG_NP_8 136
-#define VG_NP_9 167
+#define VG_NP_9 137
 #define VG_NP_DASH 142
 #define VG_NP_COMMA 143
 #define VG_UP 138
@@ -238,7 +238,7 @@ byte getChar() {
 
 bool nextIsAlt = false;
 bool numLock = false;
-aaas
+
 void sendChar(byte key) {
   // Figure out what to do with the key
   //   * printable characters just get returned.
@@ -254,7 +254,7 @@ void sendChar(byte key) {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_ALT);
         Keyboard.press(key);
-        delay(100);// I've seen this elsewhere. sometimes 20 ms
+        delay(20);// I've seen this elsewhere. sometimes 20 ms
         Keyboard.releaseAll();
         Keyboard.end();
       }
@@ -302,7 +302,7 @@ void sendChar(byte key) {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_CTRL);
         Keyboard.press(key);
-        delay(100);// I've seen this elsewhere. sometimes 20 ms
+        delay(20);
         Keyboard.releaseAll();
         Keyboard.end();
       }
@@ -320,9 +320,7 @@ void sendChar(byte key) {
       Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
     } else {
       Keyboard.begin();
-      Keyboard.press(key);
-      delay(100);// I've seen this elsewhere. sometimes 20 ms
-      Keyboard.releaseAll();
+      Keyboard.write(key);
       Keyboard.end();
     }
   }
