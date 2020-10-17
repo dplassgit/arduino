@@ -42,7 +42,7 @@
 #define KEY_F12         0xCD
 #endif
 
-#define USE_KEYBOARD_LIBRARY 1
+bool useSerialLibrary = true;
 
 const int dataPin = 7;      // pin 6 on the KB connector (and pin 6 of the RJ12)
 const int resetPin = 9;     // pin 2 on the KB connector (and pin 4 on the RJ12)
@@ -52,14 +52,22 @@ void setup() {
   pinMode(dataPin, INPUT);
   setupTable();
 
-#ifndef USE_KEYBOARD_LIBRARY
   Serial.begin(9600);
-  Serial.println("Hello keyboard passthrough");
-#endif
+  Serial.println("Hello keyboard passthrough. Starting with serial");
+
   // Set the reset pin low for 10 ms.
   digitalWrite(resetPin, LOW);
   delay(10);
   digitalWrite(resetPin, HIGH);
+}
+
+void setUseSerialLibrary(bool use) {
+  if (use) {
+    Serial.println("Stopping keyboard, starting serial");
+  } else {
+    Serial.println("Stopping serial, starting keyboard");
+  }
+  useSerialLibrary = use;
 }
 
 byte translationTable[256];
@@ -200,9 +208,9 @@ void loop() {
     delayMicroseconds(baudDelay / 2);
 
     byte key = getChar();
-#ifndef USE_KEYBOARD_LIBRARY
-    Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
-#endif
+    if (useSerialLibrary) {
+      Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
+    }
     sendChar(key);
     oneHigh = false;
   } else {
@@ -230,37 +238,40 @@ byte getChar() {
 
 bool nextIsAlt = false;
 bool numLock = false;
-
+aaas
 void sendChar(byte key) {
   // Figure out what to do with the key
-  // 	* printable characters just get returned.
-  // 	* control characters: ctrl + letter
+  //   * printable characters just get returned.
+  //  * control characters: ctrl + letter
   //    * F13 is "send next char as "alt""
   //    * F14 is "numLock toggle"
   //    * Other characters are translated.
   if (key >= ' ' && key <= '~') {
     if (nextIsAlt) {
-#ifndef USE_KEYBOARD_LIBRARY
-      Serial.print("Alt+"); Serial.println((char) key);
-#else
-//      Keyboard.begin();
-//      Keyboard.press(KEY_ALT)
-//      Keyboard.press(key);
-//      delay(100);// I've seen this elsewhere. sometimes 20 ms
-//      Keyboard.releaseAll();
-//      Keyboard.end();
-#endif
+      if (useSerialLibrary) {
+        Serial.print("Alt+"); Serial.println((char) key);
+      } else {
+        Keyboard.begin();
+        Keyboard.press(KEY_LEFT_ALT);
+        Keyboard.press(key);
+        delay(100);// I've seen this elsewhere. sometimes 20 ms
+        Keyboard.releaseAll();
+        Keyboard.end();
+      }
       nextIsAlt = false;
       return;
     }
 
-#ifndef USE_KEYBOARD_LIBRARY
-    Serial.print("Printable: "); Serial.println((char) key);
-#else
-    Keyboard.begin();
-    Keyboard.write(key);
-    Keyboard.end();
-#endif
+    if (key == 's') {
+      setUseSerialLibrary(!useSerialLibrary);
+    }
+    if (useSerialLibrary) {
+      Serial.print("Printable: "); Serial.println((char) key);
+    } else {
+      Keyboard.begin();
+      Keyboard.write(key);
+      Keyboard.end();
+    }
     return;
   }
 
@@ -275,44 +286,44 @@ void sendChar(byte key) {
   if (translated == SPECIAL) {
     // deal with F13 & F14
     if (key == VG_F13) {
-#ifndef USE_KEYBOARD_LIBRARY
-      Serial.println("F13: Next-alt");
-#endif
+      if (useSerialLibrary) {
+        Serial.println("F13: Next-alt");
+      }
       nextIsAlt = true;
     } else if (key == VG_F14) {
       numLock = !numLock;
-#ifndef USE_KEYBOARD_LIBRARY
-      Serial.print("F14: Toggling numlock "); Serial.println(numLock);
-#endif
+      if (useSerialLibrary) {
+        Serial.print("F14: Toggling numlock "); Serial.println(numLock);
+      }
     } else if (key < ' ') {
-#ifndef USE_KEYBOARD_LIBRARY
-      Serial.print("ctrl-"); Serial.println((char)(key + 64));
-#else
-//      Keyboard.begin();
-//      Keyboard.press(KEY_LEFT_CTRL);
-//      Keyboard.press(key + 64)
-//      delay(100);// I've seen this elsewhere. sometimes 20 ms
-//      Keyboard.releaseAll();
-//      Keyboard.end();
-#endif
+      if (useSerialLibrary) {
+        Serial.print("ctrl-"); Serial.println((char)(key + 64));
+      } else {
+        Keyboard.begin();
+        Keyboard.press(KEY_LEFT_CTRL);
+        Keyboard.press(key);
+        delay(100);// I've seen this elsewhere. sometimes 20 ms
+        Keyboard.releaseAll();
+        Keyboard.end();
+      }
     }
   } else if (translated > ' ' && translated <= '~') {
-#ifndef USE_KEYBOARD_LIBRARY
-    Serial.print("Printable: "); Serial.print((char) translated); Serial.print("; was decimal: "); Serial.println(key);
-#else
-    Keyboard.begin();
-    Keyboard.write(translated);
-    Keyboard.end();
-#endif
+    if (useSerialLibrary) {
+      Serial.print("Printable: "); Serial.print((char) translated); Serial.print("; was decimal: "); Serial.println(key);
+    } else {
+      Keyboard.begin();
+      Keyboard.write(translated);
+      Keyboard.end();
+    }
   } else {
-#ifndef USE_KEYBOARD_LIBRARY
-    Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
-#else
-    Keyboard.begin();
-    Keyboard.press(key);
-    delay(100);// I've seen this elsewhere. sometimes 20 ms
-    Keyboard.releaseAll();
-    Keyboard.end();
-#endif
+    if (useSerialLibrary) {
+      Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
+    } else {
+      Keyboard.begin();
+      Keyboard.press(key);
+      delay(100);// I've seen this elsewhere. sometimes 20 ms
+      Keyboard.releaseAll();
+      Keyboard.end();
+    }
   }
 }
