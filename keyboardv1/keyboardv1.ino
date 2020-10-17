@@ -241,11 +241,11 @@ bool numLock = false;
 
 void sendChar(byte key) {
   // Figure out what to do with the key
-  //   * printable characters just get returned.
+  //  * printable characters just get returned.
   //  * control characters: ctrl + letter
-  //    * F13 is "send next char as "alt""
-  //    * F14 is "numLock toggle"
-  //    * Other characters are translated.
+  //  * F13 is "send next char as "alt""
+  //  * F14 is "numLock toggle"
+  //  * Other characters are translated.
   if (key >= ' ' && key <= '~') {
     if (nextIsAlt) {
       if (useSerialLibrary) {
@@ -254,7 +254,7 @@ void sendChar(byte key) {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_ALT);
         Keyboard.press(key);
-        delay(20);// I've seen this elsewhere. sometimes 20 ms
+        delay(20); // I've seen this elsewhere. sometimes 100 ms
         Keyboard.releaseAll();
         Keyboard.end();
       }
@@ -297,11 +297,12 @@ void sendChar(byte key) {
       }
     } else if (key < ' ') {
       if (useSerialLibrary) {
-        Serial.print("ctrl-"); Serial.println((char)(key + 64));
+        Serial.print("ctrl-"); Serial.println((char)(key + 96));
       } else {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_CTRL);
-        Keyboard.press(key);
+        // this currently can only send lower case control characters. Need to look into this more.
+        Keyboard.press((char) (key + 96));
         delay(20);
         Keyboard.releaseAll();
         Keyboard.end();
@@ -320,7 +321,7 @@ void sendChar(byte key) {
       Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
     } else {
       Keyboard.begin();
-      Keyboard.write(key);
+      Keyboard.write(translated);
       Keyboard.end();
     }
   }
