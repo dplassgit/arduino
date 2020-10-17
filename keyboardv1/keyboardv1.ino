@@ -6,7 +6,6 @@
 #include <Keyboard.h>
 
 #ifndef KEY_F12
-
 // Arduino UNO can't be used as a HID device, but in order
 // to test the logic, we define some of the keys here.
 
@@ -43,6 +42,8 @@
 #define KEY_F12         0xCD
 #endif
 
+#define USE_KEYBOARD_LIBRARY 1
+
 const int dataPin = 7;      // pin 6 on the KB connector (and pin 6 of the RJ12)
 const int resetPin = 9;     // pin 2 on the KB connector (and pin 4 on the RJ12)
 
@@ -51,9 +52,10 @@ void setup() {
   pinMode(dataPin, INPUT);
   setupTable();
 
+#ifndef USE_KEYBOARD_LIBRARY
   Serial.begin(9600);
   Serial.println("Hello keyboard passthrough");
-
+#endif
   // Set the reset pin low for 10 ms.
   digitalWrite(resetPin, LOW);
   delay(10);
@@ -100,10 +102,10 @@ byte numLockTable[256];
 #define VG_NP_9 167
 #define VG_NP_DASH 142
 #define VG_NP_COMMA 143
-#define VG_NP_UP 138
-#define VG_NP_DOWN 139
-#define VG_NP_LEFT 140
-#define VG_NP_RIGHT 141
+#define VG_UP 138
+#define VG_DOWN 139
+#define VG_LEFT 140
+#define VG_RIGHT 141
 #define VG_NP_ENTER 160
 
 void setupTable() {
@@ -188,16 +190,23 @@ void setupTable() {
 // Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
 const int baudDelay = 3387;
 
+// Have to have at least one high reading before triggering low.
+boolean oneHigh = false;
 
 void loop() {
   int data = digitalRead(dataPin);
-  if (data == LOW) {
+  if (oneHigh && data == LOW) {
     // Wait half a cycle so that we're sampling in the middle of the bit.
     delayMicroseconds(baudDelay / 2);
 
     byte key = getChar();
+#ifndef USE_KEYBOARD_LIBRARY
     Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
+#endif
     sendChar(key);
+    oneHigh = false;
+  } else {
+    oneHigh = true;
   }
 }
 
@@ -231,21 +240,27 @@ void sendChar(byte key) {
   //    * Other characters are translated.
   if (key >= ' ' && key <= '~') {
     if (nextIsAlt) {
+#ifndef USE_KEYBOARD_LIBRARY
       Serial.print("Alt+"); Serial.println((char) key);
-      // Keyboard.begin();
-      // Keyboard.press(KEY_ALT)
-      // Keyboard.press(key);
-      // delay(100);// I've seen this elsewhere. sometimes 20 ms
-      // Keyboard.releaseAll();
-      // Keyboard.end();
+#else
+//      Keyboard.begin();
+//      Keyboard.press(KEY_ALT)
+//      Keyboard.press(key);
+//      delay(100);// I've seen this elsewhere. sometimes 20 ms
+//      Keyboard.releaseAll();
+//      Keyboard.end();
+#endif
       nextIsAlt = false;
       return;
     }
 
+#ifndef USE_KEYBOARD_LIBRARY
     Serial.print("Printable: "); Serial.println((char) key);
-    // Keyboard.begin();
-    // Keyboard.write(key);
-    // Keyboard.end();
+#else
+    Keyboard.begin();
+    Keyboard.write(key);
+    Keyboard.end();
+#endif
     return;
   }
 
@@ -260,31 +275,44 @@ void sendChar(byte key) {
   if (translated == SPECIAL) {
     // deal with F13 & F14
     if (key == VG_F13) {
+#ifndef USE_KEYBOARD_LIBRARY
       Serial.println("F13: Next-alt");
+#endif
       nextIsAlt = true;
     } else if (key == VG_F14) {
       numLock = !numLock;
+#ifndef USE_KEYBOARD_LIBRARY
       Serial.print("F14: Toggling numlock "); Serial.println(numLock);
+#endif
     } else if (key < ' ') {
+#ifndef USE_KEYBOARD_LIBRARY
       Serial.print("ctrl-"); Serial.println((char)(key + 64));
-      // Keyboard.begin();
-      // Keyboard.press(KEY_LEFT_CTRL);
-      // Keyboard.press(key + 64)
-      // delay(100);// I've seen this elsewhere. sometimes 20 ms
-      // Keyboard.releaseAll();
-      // Keyboard.end();
+#else
+//      Keyboard.begin();
+//      Keyboard.press(KEY_LEFT_CTRL);
+//      Keyboard.press(key + 64)
+//      delay(100);// I've seen this elsewhere. sometimes 20 ms
+//      Keyboard.releaseAll();
+//      Keyboard.end();
+#endif
     }
   } else if (translated > ' ' && translated <= '~') {
+#ifndef USE_KEYBOARD_LIBRARY
     Serial.print("Printable: "); Serial.print((char) translated); Serial.print("; was decimal: "); Serial.println(key);
-    // Keyboard.begin();
-    // Keyboard.write(translated);
-    // Keyboard.end();
+#else
+    Keyboard.begin();
+    Keyboard.write(translated);
+    Keyboard.end();
+#endif
   } else {
+#ifndef USE_KEYBOARD_LIBRARY
     Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
-    // Keyboard.begin();
-    // Keyboard.press(key);
-    // delay(100);// I've seen this elsewhere. sometimes 20 ms
-    // Keyboard.releaseAll();
-    // Keyboard.end();
+#else
+    Keyboard.begin();
+    Keyboard.press(key);
+    delay(100);// I've seen this elsewhere. sometimes 20 ms
+    Keyboard.releaseAll();
+    Keyboard.end();
+#endif
   }
 }
