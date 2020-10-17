@@ -80,26 +80,22 @@ volatile int printed = 0; // debugging
 #define DELAY_124NS DELAY_62NS DELAY_62NS
 #define DELAY_248NS DELAY_124NS DELAY_124NS
 #define DELAY_496NS DELAY_248NS DELAY_248NS
-// Really 992/shrug
+// Really 992 /shrug
 #define DELAY_1US DELAY_496NS DELAY_496NS
-#define DELAY_2US DELAY_1US DELAY_1US
-#define DELAY_4US DELAY_2US DELAY_2US
-// Really 7936ns
-#define DELAY_8US DELAY_4US DELAY_4US
+#define DELAY_3US DELAY_1US DELAY_1US DELAY_1US
+#define DELAY_4US DELAY_3US DELAY_1US
 
 // Delay 1.4 microseconds. One nop = 62.5ns, so we use 22 nops (1.375 us)
-#define DELAY_14_US "nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t"
-// delay 20 us was too long.
-// delay 12 was ok, but ctrl+shift still not working.
-#define DELAY_12_US DELAY_8US DELAY_4US
-#define DELAY_10_US DELAY_8US DELAY_2US
+#define DELAY_1_4US "nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t"
 
 #define DBG_COUNT 1000000
+#undef DEBUG
 
 void intHandler() {
   // Read pins a,b,c,d at the same time (upper 4 bits, then shift to the bottom nibble)
   int controlPins = (PIND & B01111000) >> 3;
 
+#ifdef DEBUG
   if (printed == DBG_COUNT) {
     int a = (controlPins & B00000001),
         b = (controlPins & B00000010) >> 1,
@@ -110,30 +106,37 @@ void intHandler() {
   } else {
     printed++;
   }
+#endif
 
   byte outputPins = splintPins[controlPins];
   if (outputPins != 0) {
+#ifdef DEBUG
     if (printed == DBG_COUNT) {
       Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
     }
+#endif
+
+    __asm__(DELAY_3US);
     // Set all outputs on Port B
     PORTB = outputPins;
-    __asm__(DELAY_8US);
+    __asm__(DELAY_4US);
     PORTB = B00000000;
   }
+#ifdef DEBUG
   if (printed == DBG_COUNT) {
     printed = 0;
   }
+#endif
 }
 
 // Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
-const int baudDelay = 3387;
+const int baudDelay = 3000;//3387;
 int allData[9];
 
 void loop() {
   int data = digitalRead(dataPin);
   if (data == LOW) {
-    noInterrupts();
+//    noInterrupts();
     int index = 0;
     int theKey = 0;
 
@@ -153,7 +156,7 @@ void loop() {
       delayMicroseconds(baudDelay);
     }
 
-    interrupts();
+ //   interrupts();
     Serial.print("YOU TYPED: ");
     Serial.print((char)theKey);
     Serial.print(" ("); Serial.print(theKey); Serial.print("=0b");
