@@ -136,17 +136,17 @@ void setupTable() {
   translationTable[VG_LINEFEED] = KEY_LEFT_GUI; // Windows key, by itself. Will not work as-is, as a modifier
   translationTable[13] = KEY_RETURN;
   translationTable[27] = KEY_ESC;
+  translationTable[29] = SPECIAL; // shift-tab
   translationTable[VG_DEL] = KEY_DELETE;
   translationTable[VG_BACKSPACE] = KEY_BACKSPACE;
 
-  translationTable[VG_HELP] = KEY_F1; // map vg help key to f1
-  translationTable[VG_F1] = KEY_F2; // map vg f1 to f2
-  translationTable[VG_F2] = KEY_F3; // map vg f2 to f3
-  translationTable[VG_F3] = KEY_F4; // map vg f3 to f4
-  translationTable[VG_F4] = KEY_F5; // map vg f4 to f6
-  translationTable[VG_F5] = KEY_F6; // map vg f5 to f6
-  // NOTE: NO 198 (F6), because you can't type F6 on this keyboard...
-  translationTable[VG_F7] = KEY_F7; // FROM HERE, the mappings are correct
+  translationTable[VG_F1] = KEY_F1;
+  translationTable[VG_F2] = KEY_F2;
+  translationTable[VG_F3] = KEY_F3;
+  translationTable[VG_F4] = KEY_F4;
+  translationTable[VG_F5] = KEY_F5;
+  translationTable[VG_F6] = KEY_F6;
+  translationTable[VG_F7] = KEY_F7;
   translationTable[VG_F8] = KEY_F8;
   translationTable[VG_F9] = KEY_F9;
   translationTable[VG_F10] = KEY_F10;
@@ -211,7 +211,9 @@ void loop() {
     if (useSerialLibrary) {
       Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
     }
-    sendChar(key);
+    if (key != 0) {
+      sendChar(key);
+    }
     oneHigh = false;
   } else {
     oneHigh = true;
@@ -240,6 +242,10 @@ bool nextIsAlt = false;
 bool numLock = false;
 
 void sendChar(byte key) {
+  if (key == VG_F6) {
+    setUseSerialLibrary(!useSerialLibrary);
+  }
+
   // Figure out what to do with the key
   //  * printable characters just get returned.
   //  * control characters: ctrl + letter
@@ -262,9 +268,6 @@ void sendChar(byte key) {
       return;
     }
 
-    if (key == 's') {
-      setUseSerialLibrary(!useSerialLibrary);
-    }
     if (useSerialLibrary) {
       Serial.print("Printable: "); Serial.println((char) key);
     } else {
@@ -302,6 +305,8 @@ void sendChar(byte key) {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_CTRL);
         // this currently can only send lower case control characters. Need to look into this more.
+        // control+number is not possible because it's not represented in ASCII.
+        // control+shift+letter is also not possible.
         Keyboard.press((char) (key + 96));
         delay(20);
         Keyboard.releaseAll();
