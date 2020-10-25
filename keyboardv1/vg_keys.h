@@ -2,7 +2,7 @@
 
 /* Vector Graphic keyboard keycodes. */
 #define VG_TAB 9
-#define VG_ESC 28
+#define VG_ESC 27
 #define VG_BACKSPACE 8
 #define VG_DEL 127
 #define VG_LINEFEED 10

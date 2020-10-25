@@ -5,6 +5,8 @@
 #include <Keyboard.h>
 #include "vg_keys.h"
 
+// Whether to write logs through the serial library (true, default),
+// or to act as a true USB keyboard (false).
 bool useSerialLibrary = true;
 
 const int dataPin = 7;      // pin 6 on the KB connector (and pin 6 of the RJ12)
@@ -16,19 +18,25 @@ void setup() {
   setupTable();
 
   Serial.begin(9600);
-  Serial.println("Hello keyboard passthrough. Starting with serial");
+  Serial.println("Hello keyboardv1");
+  setUseSerialLibrary(true);
+}
 
-  // Set the reset pin low for 10 ms.
+void reset() {
+  // Set the reset pin low for 5 ms.
   digitalWrite(resetPin, LOW);
-  delay(10);
+  delay(5);
   digitalWrite(resetPin, HIGH);
 }
 
 void setUseSerialLibrary(bool use) {
   if (use) {
     Serial.println("Stopping keyboard, starting serial");
+    reset();
   } else {
     Serial.println("Stopping serial, starting keyboard");
+    reset();
+    reset();
   }
   useSerialLibrary = use;
 }
@@ -37,7 +45,6 @@ byte translationTable[256];
 byte numLockTable[256];
 
 #define SPECIAL 255
-
 
 void setupTable() {
   for (int i = 0; i < 256; i++)  {
@@ -55,10 +62,11 @@ void setupTable() {
   }
 
   translationTable[VG_TAB] = KEY_TAB;
-  // maybe this should be alt, and F13 is Windows?
-  translationTable[VG_LINEFEED] = KEY_LEFT_GUI; // Windows key, by itself. Will not work as-is, as a modifier
+  // Windows key
+  translationTable[VG_LINEFEED] = KEY_LEFT_GUI;
   translationTable[13] = KEY_RETURN;
   translationTable[VG_ESC] = KEY_ESC;
+  
   // translationTable[29] = SPECIAL; // shift-tab
   // translationTable[28] = SPECIAL; // control-backslash
   // Yes, delete and backspace are swapped.
@@ -122,7 +130,7 @@ void setupTable() {
 
 
 // Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
-const int baudDelay = 3387;
+#define BAUD_DELAY_US 3387
 
 // Have to have at least one high reading before triggering low.
 boolean oneHigh = false;
@@ -131,13 +139,15 @@ void loop() {
   int data = digitalRead(dataPin);
   if (oneHigh && data == LOW) {
     // Wait half a cycle so that we're sampling in the middle of the bit.
-    delayMicroseconds(baudDelay / 2);
+    delayMicroseconds(BAUD_DELAY_US / 2);
 
     byte key = getChar();
     if (useSerialLibrary) {
       Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
     }
     if (key != 0) {
+      // If the keyboard has no power it will return all lows, sending back an avalanche of
+      // zeros. Ignore (for now?)
       sendChar(key);
     }
     oneHigh = false;
@@ -158,7 +168,7 @@ byte getChar() {
     }
 
     // Wait for the next bit
-    delayMicroseconds(baudDelay);
+    delayMicroseconds(BAUD_DELAY_US);
   }
 
   return (byte) theKey;
@@ -168,7 +178,7 @@ bool nextIsAlt = false;
 bool numLock = false;
 
 void sendChar(byte key) {
-  if (key == 246) { // ctrl+shift+F6 (help)
+  if (key == 246) { // ctrl+shift+F6 (Help)
     // Toggles the keyboard-iness
     setUseSerialLibrary(!useSerialLibrary);
   }
@@ -234,6 +244,7 @@ void sendChar(byte key) {
         // this currently can only send lower case control characters. Need to look into this more.
         // control+number is not possible because it's not represented in ASCII.
         // control+shift+letter is also not possible.
+        // Maybe use ctrl+f13 to represent "next char is ctrl-" and ctrl-shift_f13 to represent "next char is ctrl+shift+"?
         Keyboard.press((char) (key + 96));
         delay(20);
         Keyboard.releaseAll();
