@@ -1,5 +1,3 @@
-#include <Keyboard.h>
-
 /* Vector Graphic keyboard keycodes. */
 #define VG_TAB 9
 #define VG_ESC 27
@@ -42,6 +40,9 @@
 #define VG_LEFT 140
 #define VG_RIGHT 141
 #define VG_NP_ENTER 160
+
+#define SPECIAL 255
+
 
 #ifndef KEY_F12
 // The Arduino UNO can't be used as a HID device, but in order
