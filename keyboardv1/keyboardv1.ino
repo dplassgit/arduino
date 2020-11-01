@@ -116,7 +116,12 @@ void sendChar(byte key) {
   //  * Other characters are translated.
   if (nextIsAlt) {
     if (useSerialLibrary) {
-      Serial.print("Alt+"); Serial.println(translated);
+      Serial.print("Alt+");
+      if (key == VG_SHIFT_TAB) {
+        Serial.println("shift+tab");
+      } else {
+        Serial.println(translated);
+      }
     } else {
       // TODO: think about alt+ctrl+char, and alt+ctrl+shift+char
       Keyboard.begin();
@@ -191,17 +196,17 @@ void sendChar(byte key) {
         Keyboard.releaseAll();
         Keyboard.end();
       }
-    }
-  } else if (key == VG_SHIFT_TAB) {
-    if (useSerialLibrary) {
-      Serial.print("Unprintable: Shift tab: "); Serial.println((char) key);
-    } else {
-      Keyboard.begin();
-      Keyboard.press(KEY_LEFT_SHIFT);
-      Keyboard.press(KEY_TAB);
-      delay(100);
-      Keyboard.releaseAll();
-      Keyboard.end();
+    } else if (key == VG_SHIFT_TAB) {
+      if (useSerialLibrary) {
+        Serial.print("Unprintable: Shift tab: "); Serial.println((char) key);
+      } else {
+        Keyboard.begin();
+        Keyboard.press(KEY_LEFT_SHIFT);
+        Keyboard.press(KEY_TAB);
+        delay(100);
+        Keyboard.releaseAll();
+        Keyboard.end();
+      }
     }
   } else if (translated == KEY_F13) {
     // This will trigger for F13, ctrl+F13, shift+F13, etc.
@@ -234,23 +239,22 @@ void sendChar(byte key) {
       Keyboard.end();
     }
   } else {
-
     // Function key or other unprintable.
     if (useSerialLibrary) {
       Serial.print("Unprintable: ");
-      if ((key & VG_CTRL) == VG_CTRL) {
+      if (key > 127 && (key & VG_CTRL) == VG_CTRL) {
         Serial.print("ctrl+");
       }
-      if ((key & VG_SHIFT) == VG_SHIFT) {
+      if (key > 127 && (key & VG_SHIFT) == VG_SHIFT) {
         Serial.print("shift+");
       }
       Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
     } else {
       Keyboard.begin();
-      if ((key & VG_SHIFT) == VG_SHIFT) {
+      if (key > 127 && (key & VG_SHIFT) == VG_SHIFT) {
         Keyboard.press(KEY_LEFT_SHIFT);
       }
-      if ((key & VG_CTRL) == VG_CTRL) {
+      if (key > 127 && (key & VG_CTRL) == VG_CTRL) {
         Keyboard.press(KEY_LEFT_CTRL);
       }
       Keyboard.press(translated);

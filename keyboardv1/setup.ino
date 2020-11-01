@@ -7,6 +7,9 @@ void setupTable() {
     if (i >= ' ' && i <= '~') {
       // Printable characters
       translationTable[i] = i;
+    } else if (i < ' ') {
+      // Control characters, except for exceptions, below.
+      translationTable[i] = i;
     } else {
       // Initialize the whole table so it defaults anything not mapped to space
       translationTable[i] = ' ';
