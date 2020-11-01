@@ -1,10 +1,19 @@
 /* Vector Graphic keyboard keycodes. */
+// ASCII keys:
 #define VG_TAB 9
 #define VG_ESC 27
 #define VG_BACKSPACE 8
 #define VG_DEL 127
 #define VG_LINEFEED 10
+#define VG_ENTER 13
 
+// Semi-ASCII keys:
+#define VG_CTRL_BACKSLASH 28
+#define VG_SHIFT_TAB 29
+#define VG_CTRL_SHIFT_6 30
+#define VG_CTRL_SHIFT_DASH 31
+
+// Function keys:
 #define VG_HELP 192
 #define VG_F1 193
 #define VG_F2 194
@@ -21,8 +30,7 @@
 #define VG_F13 205
 #define VG_F14 206
 
-// Numeric keypad:
-#define VG_NP_DOT 207
+// Number pad:
 #define VG_NP_0 128
 #define VG_NP_1 129
 #define VG_NP_2 130
@@ -33,16 +41,23 @@
 #define VG_NP_7 135
 #define VG_NP_8 136
 #define VG_NP_9 137
+#define VG_NP_DOT 207
 #define VG_NP_DASH 142
 #define VG_NP_COMMA 143
+#define VG_NP_ENTER 160
+
+// Cursor keys:
 #define VG_UP 138
 #define VG_DOWN 139
 #define VG_LEFT 140
 #define VG_RIGHT 141
-#define VG_NP_ENTER 160
 
+// Modifiers/add this to one of the non-ASCII keys, above
+#define VG_SHIFT 16
+#define VG_CTRL 32
+
+// Marker for "untranslatable" keys.
 #define SPECIAL 255
-
 
 #ifndef KEY_F12
 // The Arduino UNO can't be used as a HID device, but in order

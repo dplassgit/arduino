@@ -57,7 +57,7 @@ void loop() {
     // Wait half a cycle so that we're sampling in the middle of the bit.
     delayMicroseconds(BAUD_DELAY_US / 2);
 
-    byte key = getChar();
+    byte key = getKeyFromVG();
     if (useSerialLibrary) {
       Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
     }
@@ -72,7 +72,8 @@ void loop() {
   }
 }
 
-byte getChar() {
+/** Get a keystroke from the VG keyboard */
+byte getKeyFromVG() {
   int theKey = 0;
   for (int i = 0; i <= 8; ++i) {
     int data = digitalRead(dataPin);
@@ -93,24 +94,25 @@ byte getChar() {
 bool nextIsAlt = false;
 bool numLock = false;
 
+/* Send a key chord over the USB. */
 void sendChar(byte key) {
-  if (key == 246) { // ctrl+shift+F6 (Help)
+  // TEMPORARY
+  if (key == VG_F6 + VG_CTRL + VG_SHIFT) { // 246
     // Toggles the keyboard-iness
     setUseSerialLibrary(!useSerialLibrary);
   }
 
-  byte translated;
+  byte translated = translationTable[key];
   if (numLock) {
     translated = numLockTable[key];
-  } else {
-    translated = translationTable[key];
   }
 
   // Figure out what to do with the key
-  //  * printable characters just get returned.
+  //  * If "next is alt", send this char as alt
+  //  * printable characters just get sent
   //  * control characters: ctrl + letter
-  //  * F13 is "send next char as "alt""
-  //  * F14 is "numLock toggle"
+  //  * F13 is toggles "send next char as "alt""
+  //  * F14 is toggles "numLock"
   //  * Other characters are translated.
   if (nextIsAlt) {
     if (useSerialLibrary) {
@@ -119,8 +121,15 @@ void sendChar(byte key) {
       // TODO: think about alt+ctrl+char, and alt+ctrl+shift+char
       Keyboard.begin();
       Keyboard.press(KEY_LEFT_ALT);
-      Keyboard.write(translated);
-      delay(100); // I've seen this elsewhere. sometimes 100 ms
+      if (key == VG_SHIFT_TAB) {
+        // Unfortunately, shift+tab is 29, which is NOT 8+16 (shift),
+        // so we have to hack this.
+        Keyboard.press(KEY_LEFT_SHIFT);
+        Keyboard.press(KEY_TAB);
+      } else {
+        Keyboard.write(translated);
+      }
+      delay(100);
       Keyboard.releaseAll();
       Keyboard.end();
     }
@@ -128,59 +137,125 @@ void sendChar(byte key) {
     return;
   }
 
-  if (key >= ' ' && key <= '~') {
+  // Printable character
+  if (translated >= ' ' && translated <= '~') {
     if (useSerialLibrary) {
-      Serial.print("Printable: "); Serial.println((char) key);
+      Serial.print("Printable: "); Serial.print((char) translated);
+      if (key != translated) {
+        Serial.print("; was: "); Serial.println(key);
+      } else {
+        Serial.println();
+      }
     } else {
       Keyboard.begin();
-      Keyboard.write(key);
+      Keyboard.write(translated);
       Keyboard.end();
     }
     return;
   }
 
+  // Deal with unprintables
   if (translated == SPECIAL) {
-    // deal with F13 & F14
-    if (key == VG_F13) {
+    if (key == VG_CTRL_SHIFT_DASH) {
       if (useSerialLibrary) {
-        Serial.println("F13: Next-alt");
-      }
-      nextIsAlt = true;
-    } else if (key == VG_F14) {
-      numLock = !numLock;
-      if (useSerialLibrary) {
-        Serial.print("F14: Toggling numlock "); Serial.println(numLock);
-      }
-    } else if (key < ' ') {
-      if (useSerialLibrary) {
-        Serial.print("ctrl-"); Serial.println((char)(key + 96));
+        Serial.print("Unprintable: ctrl+shift+dash: "); Serial.println((char) key);
       } else {
         Keyboard.begin();
         Keyboard.press(KEY_LEFT_CTRL);
-        // this currently can only send lower case control characters. Need to look into this more.
-        // control+number is not possible because it's not represented in ASCII.
-        // control+shift+letter is also not possible.
-        // Maybe use ctrl+f13 to represent "next char is ctrl-" and ctrl-shift_f13 to represent "next char is ctrl+shift+"?
-        Keyboard.press((char) (key + 96));
-        delay(20);
+        Keyboard.press(KEY_LEFT_SHIFT);
+        Keyboard.press('-');
+        delay(100);
+        Keyboard.releaseAll();
+        Keyboard.end();
+      }
+    } else if (key == VG_CTRL_SHIFT_6) {
+      if (useSerialLibrary) {
+        Serial.print("Unprintable: ctrl+shift+6: "); Serial.println((char) key);
+      } else {
+        Keyboard.begin();
+        Keyboard.press(KEY_LEFT_CTRL);
+        Keyboard.press(KEY_LEFT_SHIFT);
+        Keyboard.press('6');
+        delay(100);
+        Keyboard.releaseAll();
+        Keyboard.end();
+      }
+    } else if (key == VG_CTRL_BACKSLASH) {
+      if (useSerialLibrary) {
+        Serial.print("Unprintable: ctrl+backslash: "); Serial.println((char) key);
+      } else {
+        Keyboard.begin();
+        Keyboard.press(KEY_LEFT_CTRL);
+        Keyboard.press('\\');
+        delay(100);
         Keyboard.releaseAll();
         Keyboard.end();
       }
     }
-  } else if (translated > ' ' && translated <= '~') {
+  } else if (key == VG_SHIFT_TAB) {
     if (useSerialLibrary) {
-      Serial.print("Printable: "); Serial.print((char) translated); Serial.print("; was decimal: "); Serial.println(key);
+      Serial.print("Unprintable: Shift tab: "); Serial.println((char) key);
     } else {
       Keyboard.begin();
-      Keyboard.write(translated);
+      Keyboard.press(KEY_LEFT_SHIFT);
+      Keyboard.press(KEY_TAB);
+      delay(100);
+      Keyboard.releaseAll();
+      Keyboard.end();
+    }
+  } else if (translated == KEY_F13) {
+    // This will trigger for F13, ctrl+F13, shift+F13, etc.
+
+    // TODO: Maybe use ctrl+f13 to represent "next char is ctrl-" and ctrl-shift_f13
+    // to represent "next char is ctrl+shift+", etc.
+    if (useSerialLibrary) {
+      Serial.println("F13: Next-alt");
+    }
+    nextIsAlt = true;
+  } else if (translated == KEY_F14) {
+    // This will trigger for F14, ctrl+F14, shift+F14, etc.
+    numLock = !numLock;
+    if (useSerialLibrary) {
+      Serial.print("F14: Toggling numlock "); Serial.println(numLock);
+    }
+  } else if (key < ' ') {
+    // Send control character.
+    if (useSerialLibrary) {
+      Serial.print("ctrl-"); Serial.println((char)(key + 96));
+    } else {
+      // This currently can only send lower case control characters. TODO: look into this more.
+      // ctrl+number (or ctrl+shift+number) is not possible because they're not represented in ASCII.
+      // Similarly, ctrl+shift+letter is also not possible.
+      Keyboard.begin();
+      Keyboard.press(KEY_LEFT_CTRL);
+      Keyboard.press((char) (key + 96));
+      delay(100);
+      Keyboard.releaseAll();
       Keyboard.end();
     }
   } else {
+
+    // Function key or other unprintable.
     if (useSerialLibrary) {
-      Serial.print("Unprintable: "); Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
+      Serial.print("Unprintable: ");
+      if ((key & VG_CTRL) == VG_CTRL) {
+        Serial.print("ctrl+");
+      }
+      if ((key & VG_SHIFT) == VG_SHIFT) {
+        Serial.print("shift+");
+      }
+      Serial.print((int) translated); Serial.print(" decimal; was decimal: "); Serial.println(key);
     } else {
       Keyboard.begin();
-      Keyboard.write(translated);
+      if ((key & VG_SHIFT) == VG_SHIFT) {
+        Keyboard.press(KEY_LEFT_SHIFT);
+      }
+      if ((key & VG_CTRL) == VG_CTRL) {
+        Keyboard.press(KEY_LEFT_CTRL);
+      }
+      Keyboard.press(translated);
+      delay(100);
+      Keyboard.releaseAll();
       Keyboard.end();
     }
   }
