@@ -9,7 +9,7 @@ void setupTable() {
       translationTable[i] = i;
     } else if (i < ' ') {
       // Control characters, except for exceptions, below.
-      translationTable[i] = i;
+      translationTable[i] = CTRL_MOD + i;
     } else {
       // Initialize the whole table so it defaults anything not mapped to space
       translationTable[i] = ' ';
@@ -22,10 +22,10 @@ void setupTable() {
   translationTable[VG_ENTER] = KEY_RETURN;
   translationTable[VG_ESC] = KEY_ESC;
 
-  translationTable[VG_SHIFT_TAB] = SPECIAL;
-  translationTable[VG_CTRL_BACKSLASH] = SPECIAL;
-  translationTable[VG_CTRL_SHIFT_DASH] = SPECIAL;
-  translationTable[VG_CTRL_SHIFT_6] = SPECIAL;
+  translationTable[VG_SHIFT_TAB] = SHIFT_MOD + KEY_TAB;
+  translationTable[VG_CTRL_BACKSLASH] = CTRL_MOD + '/';
+  translationTable[VG_CTRL_SHIFT_DASH] = CTRL_MOD + SHIFT_MOD + '-';
+  translationTable[VG_CTRL_SHIFT_6] = CTRL_MOD + SHIFT_MOD + '6';
 
   // Delete and backspace are swapped.
   translationTable[VG_DEL] = KEY_BACKSPACE;
@@ -114,9 +114,9 @@ void setupTable() {
 }
 
 /** Set up versions of this key with modifiers, mapping to the given IBM key. */
-void setupKeyWModifiers(int vgKey, int ibmKey) {
+void setupKeyWModifiers(byte vgKey, byte ibmKey) {
   translationTable[vgKey] = ibmKey;
-  translationTable[vgKey + VG_CTRL] = ibmKey;
-  translationTable[vgKey + VG_SHIFT] = ibmKey;
-  translationTable[vgKey + VG_SHIFT + VG_CTRL] = ibmKey;
+  translationTable[vgKey + VG_CTRL] = CTRL_MOD + ibmKey;
+  translationTable[vgKey + VG_SHIFT] = SHIFT_MOD + ibmKey;
+  translationTable[vgKey + VG_SHIFT + VG_CTRL] = CTRL_MOD + SHIFT_MOD + ibmKey;
 }

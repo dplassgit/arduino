@@ -9,8 +9,11 @@
 
 // Semi-ASCII keys:
 #define VG_CTRL_BACKSLASH 28
+// Ugh, it's not 9+VG_SHIFT (9+16)
 #define VG_SHIFT_TAB 29
+// Similarly, not 6+VG_CTRL+VG_SHIFT (6+16+32)
 #define VG_CTRL_SHIFT_6 30
+// Need I say it again?
 #define VG_CTRL_SHIFT_DASH 31
 
 // Function keys:
@@ -58,6 +61,9 @@
 
 // Marker for "untranslatable" keys.
 #define SPECIAL 255
+
+#define SHIFT_MOD (1<<9)
+#define CTRL_MOD (1<<10)
 
 #ifndef KEY_F12
 // The Arduino UNO can't be used as a HID device, but in order
