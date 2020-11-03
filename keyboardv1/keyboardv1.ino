@@ -36,7 +36,7 @@ void setUseSerialLibrary(bool use) {
   } else {
     Serial.println("Stopping serial, starting keyboard");
     reset();
-    delay(500);
+    delay(100);
     reset();
   }
   useSerialLibrary = use;
