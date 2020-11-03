@@ -18,7 +18,7 @@ void setup() {
   setupTable();
 
   Serial.begin(9600);
-  Serial.println("Hello keyboardv1 with setup");
+  Serial.println("Hello keyboardv1 with setup. Compiled: " __DATE__);
   setUseSerialLibrary(true);
 }
 
@@ -40,9 +40,6 @@ void setUseSerialLibrary(bool use) {
   }
   useSerialLibrary = use;
 }
-
-int translationTable[256];
-int numLockTable[256];
 
 // Microseconds to wait between bits. Corresponds to 110 baud, empirically determined.
 #define BAUD_DELAY_US 3387
@@ -92,6 +89,8 @@ byte getKeyFromVG() {
 
 bool nextIsAlt = false;
 bool numLock = false;
+int translationTable[256];
+int numLockTable[256];
 
 /* Send a key chord over the USB. */
 void sendChar(byte key) {
@@ -101,7 +100,7 @@ void sendChar(byte key) {
     setUseSerialLibrary(!useSerialLibrary);
   }
 
-  byte translated = translationTable[key];
+  int translated = translationTable[key];
   if (numLock) {
     translated = numLockTable[key];
   }
@@ -117,7 +116,7 @@ void sendChar(byte key) {
     if (useSerialLibrary) {
       Serial.print("alt+");
       if ((translated & CTRL_MOD) == CTRL_MOD) {
-        Serial.println("ctrl+");
+        Serial.print("ctrl+");
       }
       if ((translated & SHIFT_MOD) == SHIFT_MOD) {
         Serial.print("shift+");
@@ -170,21 +169,6 @@ void sendChar(byte key) {
     numLock = !numLock;
     if (useSerialLibrary) {
       Serial.print("F14: Toggling numlock "); Serial.println(numLock);
-    }
-  } else if (key < ' ') {
-    // Send control character.
-    if (useSerialLibrary) {
-      Serial.print("ctrl-"); Serial.println((char)(key + 96));
-    } else {
-      // This currently can only send lower case control characters. TODO: look into this more.
-      // ctrl+number (or ctrl+shift+number) is not possible because they're not represented in ASCII.
-      // Similarly, ctrl+shift+letter is also not possible.
-      Keyboard.begin();
-      Keyboard.press(KEY_LEFT_CTRL);
-      Keyboard.press((char) (key + 96)); // NOTE: not translated+96
-      delay(100);
-      Keyboard.releaseAll();
-      Keyboard.end();
     }
   } else {
     // Function key or other unprintable.

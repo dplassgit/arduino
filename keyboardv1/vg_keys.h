@@ -62,8 +62,8 @@
 // Marker for "untranslatable" keys.
 #define SPECIAL 255
 
-#define SHIFT_MOD (1<<9)
-#define CTRL_MOD (1<<10)
+#define SHIFT_MOD (1<<8)
+#define CTRL_MOD (1<<9)
 
 #ifndef KEY_F12
 // The Arduino UNO can't be used as a HID device, but in order

@@ -9,12 +9,11 @@ void setupTable() {
       translationTable[i] = i;
     } else if (i < ' ') {
       // Control characters, except for exceptions, below.
-      translationTable[i] = CTRL_MOD + i;
+      translationTable[i] = CTRL_MOD + i + 96;
     } else {
       // Initialize the whole table so it defaults anything not mapped to space
       translationTable[i] = ' ';
     }
-    numLockTable[i] = translationTable[i];
   }
 
   translationTable[VG_TAB] = KEY_TAB;
