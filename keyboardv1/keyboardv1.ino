@@ -36,6 +36,7 @@ void setUseSerialLibrary(bool use) {
   } else {
     Serial.println("Stopping serial, starting keyboard");
     reset();
+    delay(500);
     reset();
   }
   useSerialLibrary = use;
@@ -50,9 +51,6 @@ boolean oneHigh = false;
 void loop() {
   int data = digitalRead(dataPin);
   if (oneHigh && data == LOW) {
-    // Wait half a cycle so that we're sampling in the middle of the bit.
-    delayMicroseconds(BAUD_DELAY_US / 2);
-
     byte key = getKeyFromVG();
     if (useSerialLibrary) {
       Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
@@ -70,6 +68,9 @@ void loop() {
 
 /** Get a keystroke from the VG keyboard */
 byte getKeyFromVG() {
+  // Wait half a cycle so that we're sampling in the middle of the bit.
+  delayMicroseconds(BAUD_DELAY_US / 2);
+
   int theKey = 0;
   for (int i = 0; i <= 8; ++i) {
     int data = digitalRead(dataPin);
@@ -89,7 +90,9 @@ byte getKeyFromVG() {
 
 bool nextIsAlt = false;
 bool nextIsCtrl = false;
+bool nextIsShift = false;
 bool numLock = false;
+
 int translationTable[256];
 int numLockTable[256];
 
@@ -109,58 +112,23 @@ void sendChar(byte key) {
   // Figure out what to do with the key
   //  * If "next is alt", send this char as alt
   //  * printable characters just get sent
-  //  * control characters: ctrl + letter
   //  * F13 is toggles "send next char as "alt""
   //  * F14 is toggles "numLock"
   //  * Other characters are translated.
-  if (nextIsAlt) {
-    if (useSerialLibrary) {
-      Serial.print("alt+");
-      if ((translated & CTRL_MOD) == CTRL_MOD) {
-        Serial.print("ctrl+");
-      }
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Serial.print("shift+");
-      }
-      Serial.println(translated & 0xff);
-    } else {
-      // TODO: think about alt+ctrl+char, and alt+ctrl+shift+char
-      Keyboard.begin();
-      Keyboard.press(KEY_LEFT_ALT);
-      if ((translated & CTRL_MOD) == CTRL_MOD) {
-        Keyboard.press(KEY_LEFT_CTRL);
-      }
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Keyboard.press(KEY_LEFT_SHIFT);
-      }
-      Keyboard.write(translated & 0xff);
-      delay(100);
-      Keyboard.releaseAll();
-      Keyboard.end();
+  if (nextIsAlt || nextIsCtrl || nextIsShift) {
+    if (nextIsAlt) {
+      translated |= ALT_MOD;
     }
+    if (nextIsCtrl) {
+      translated |= CTRL_MOD;
+    }
+    if (nextIsShift) {
+      translated |= SHIFT_MOD;
+    }
+    pressKey(translated, key);
     nextIsAlt = false;
     nextIsCtrl = false;
-  }
-  else if (nextIsCtrl) {
-    if (useSerialLibrary) {
-      Serial.print("ctrl+");
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Serial.print("shift+");
-      }
-      Serial.println(translated & 0xff);
-    } else {
-      Keyboard.begin();
-      Keyboard.press(KEY_LEFT_CTRL);
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Keyboard.press(KEY_LEFT_SHIFT);
-      }
-      Keyboard.write(translated & 0xff);
-      delay(100);
-      Keyboard.releaseAll();
-      Keyboard.end();
-    }
-    nextIsAlt = false;
-    nextIsCtrl = false;
+    nextIsShift = false;
   }
   // Printable character
   else if (translated >= ' ' && translated <= '~') {
@@ -178,46 +146,56 @@ void sendChar(byte key) {
     }
   }
   // Deal with unprintables
-  else if (translated == KEY_F13) {
-    // Maybe use ctrl-shift_f13 to represent "next char is ctrl+shift+", etc.
+  else if ((translated & 0xff) == KEY_F13) {
+    nextIsAlt = translated == KEY_F13;
+    nextIsCtrl = (translated & CTRL_MOD) == CTRL_MOD;
+    nextIsShift = (translated & SHIFT_MOD) == SHIFT_MOD;
     if (useSerialLibrary) {
-      Serial.println("F13: Next-alt");
+      Serial.print("F13: nextIsAlt. nextIsCtrl: "); Serial.print(nextIsCtrl);
+      Serial.print(". nextIsShift: "); Serial.println(nextIsShift);
     }
-    nextIsAlt = true;
-  } else if (translated == KEY_F13 + CTRL_MOD) {
-    if (useSerialLibrary) {
-      Serial.println("Ctrl+F13: next-ctrl");
-    }
-    nextIsCtrl = true;
   } else if (translated == KEY_F14) {
-    // This will ONLY trigger for F14
     numLock = !numLock;
     if (useSerialLibrary) {
       Serial.print("F14: Toggling numlock "); Serial.println(numLock);
     }
   } else {
     // Function key or other unprintable.
-    if (useSerialLibrary) {
-      Serial.print("Unprintable: ");
-      if ((translated & CTRL_MOD) == CTRL_MOD) {
-        Serial.print("ctrl+");
-      }
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Serial.print("shift+");
-      }
-      Serial.print((int) translated & 0xff); Serial.print(" decimal; was decimal: "); Serial.println(key);
-    } else {
-      Keyboard.begin();
-      if ((translated & CTRL_MOD) == CTRL_MOD) {
-        Keyboard.press(KEY_LEFT_CTRL);
-      }
-      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
-        Keyboard.press(KEY_LEFT_SHIFT);
-      }
-      Keyboard.press(translated & 0xff);
-      delay(100);
-      Keyboard.releaseAll();
-      Keyboard.end();
+    pressKey(translated, key);
+  }
+}
+
+void pressKey(int translated, byte key) {
+  byte rawCode = (translated & 0xff);
+  if (useSerialLibrary) {
+    if ((translated & CTRL_MOD) == CTRL_MOD) {
+      Serial.print("ctrl+");
     }
+    if ((translated & ALT_MOD) == ALT_MOD) {
+      Serial.print("alt+");
+    }
+    if ((translated & SHIFT_MOD) == SHIFT_MOD) {
+      Serial.print("shift+");
+    }
+    if (rawCode >= ' ' && rawCode <= '~') {
+      Serial.print((char) rawCode); Serial.print(" ; was: "); Serial.println((char) key);
+    } else {
+      Serial.print((int) rawCode); Serial.print(" decimal; was decimal: "); Serial.println(key);
+    }
+  } else {
+    Keyboard.begin();
+    if ((translated & CTRL_MOD) == CTRL_MOD) {
+      Keyboard.press(KEY_LEFT_CTRL);
+    }
+    if ((translated & ALT_MOD) == ALT_MOD) {
+      Keyboard.press(KEY_LEFT_ALT);
+    }
+    if ((translated & SHIFT_MOD) == SHIFT_MOD) {
+      Keyboard.press(KEY_LEFT_SHIFT);
+    }
+    Keyboard.write(rawCode);
+    delay(100);
+    Keyboard.releaseAll();
+    Keyboard.end();
   }
 }

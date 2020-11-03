@@ -64,6 +64,7 @@
 
 #define SHIFT_MOD (1<<8)
 #define CTRL_MOD (1<<9)
+#define ALT_MOD (1<<10)
 
 #ifndef KEY_F12
 // The Arduino UNO can't be used as a HID device, but in order
