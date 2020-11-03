@@ -88,6 +88,7 @@ byte getKeyFromVG() {
 }
 
 bool nextIsAlt = false;
+bool nextIsCtrl = false;
 bool numLock = false;
 int translationTable[256];
 int numLockTable[256];
@@ -138,6 +139,28 @@ void sendChar(byte key) {
       Keyboard.end();
     }
     nextIsAlt = false;
+    nextIsCtrl = false;
+  }
+  else if (nextIsCtrl) {
+    if (useSerialLibrary) {
+      Serial.print("ctrl+");
+      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
+        Serial.print("shift+");
+      }
+      Serial.println(translated & 0xff);
+    } else {
+      Keyboard.begin();
+      Keyboard.press(KEY_LEFT_CTRL);
+      if ((translated & SHIFT_MOD) == SHIFT_MOD) {
+        Keyboard.press(KEY_LEFT_SHIFT);
+      }
+      Keyboard.write(translated & 0xff);
+      delay(100);
+      Keyboard.releaseAll();
+      Keyboard.end();
+    }
+    nextIsAlt = false;
+    nextIsCtrl = false;
   }
   // Printable character
   else if (translated >= ' ' && translated <= '~') {
@@ -156,14 +179,16 @@ void sendChar(byte key) {
   }
   // Deal with unprintables
   else if (translated == KEY_F13) {
-    // This will ONLY trigger for F13
-
-    // TODO: Maybe use ctrl+f13 to represent "next char is ctrl-" and ctrl-shift_f13
-    // to represent "next char is ctrl+shift+", etc.
+    // Maybe use ctrl-shift_f13 to represent "next char is ctrl+shift+", etc.
     if (useSerialLibrary) {
       Serial.println("F13: Next-alt");
     }
     nextIsAlt = true;
+  } else if (translated == KEY_F13 + CTRL_MOD) {
+    if (useSerialLibrary) {
+      Serial.println("Ctrl+F13: next-ctrl");
+    }
+    nextIsCtrl = true;
   } else if (translated == KEY_F14) {
     // This will ONLY trigger for F14
     numLock = !numLock;
