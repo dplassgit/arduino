@@ -150,6 +150,10 @@ void sendChar(byte key) {
     nextIsAlt = translated == KEY_F13;
     nextIsCtrl = (translated & CTRL_MOD) == CTRL_MOD;
     nextIsShift = (translated & SHIFT_MOD) == SHIFT_MOD;
+    // if next is shift, but neither of the others, it's alt+shift.
+    if (nextIsShift && !nextIsAlt && !nextIsCtrl) {
+      nextIsAlt = true;
+    }
     if (useSerialLibrary) {
       Serial.print("F13: nextIsAlt. nextIsCtrl: "); Serial.print(nextIsCtrl);
       Serial.print(". nextIsShift: "); Serial.println(nextIsShift);
@@ -177,8 +181,8 @@ void pressKey(int translated, byte key) {
     if ((translated & SHIFT_MOD) == SHIFT_MOD) {
       Serial.print("shift+");
     }
-    if (rawCode >= ' ' && rawCode <= '~') {
-      Serial.print((char) rawCode); Serial.print(" ; was: "); Serial.println((char) key);
+    if (key >= ' ' && key <= '~') {
+      Serial.print((char) rawCode); Serial.print(" ; was: "); Serial.println(key);
     } else {
       Serial.print((int) rawCode); Serial.print(" decimal; was decimal: "); Serial.println(key);
     }

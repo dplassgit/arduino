@@ -68,6 +68,15 @@ void setupTable() {
   translationTable[VG_NP_DASH] = '-';
   translationTable[VG_NP_DOT] = KEY_DELETE;
 
+  translationTable[VG_NP_1 + VG_CTRL] = CTRL_MOD + KEY_END;
+  translationTable[VG_NP_2 + VG_CTRL] = CTRL_MOD + KEY_DOWN_ARROW;
+  translationTable[VG_NP_3 + VG_CTRL] = CTRL_MOD + KEY_PAGE_DOWN;
+  translationTable[VG_NP_4 + VG_CTRL] = CTRL_MOD + KEY_LEFT_ARROW;
+  translationTable[VG_NP_6 + VG_CTRL] = CTRL_MOD + KEY_RIGHT_ARROW;
+  translationTable[VG_NP_7 + VG_CTRL] = CTRL_MOD + KEY_HOME;
+  translationTable[VG_NP_8 + VG_CTRL] = CTRL_MOD + KEY_UP_ARROW;
+  translationTable[VG_NP_9 + VG_CTRL] = CTRL_MOD + KEY_PAGE_UP;
+
   translationTable[VG_NP_0 + VG_SHIFT] = '0';
   translationTable[VG_NP_1 + VG_SHIFT] = '1';
   translationTable[VG_NP_2 + VG_SHIFT] = '2';
@@ -87,6 +96,11 @@ void setupTable() {
   }
 
   // Numlock overrides:
+
+  // Not sure why I needed these...
+  numLockTable[VG_NP_ENTER] = KEY_RETURN;
+  numLockTable[VG_NP_ENTER + VG_SHIFT] = KEY_RETURN;
+
   numLockTable[VG_NP_0] = '0';
   numLockTable[VG_NP_1] = '1';
   numLockTable[VG_NP_2] = '2';
@@ -98,6 +112,17 @@ void setupTable() {
   numLockTable[VG_NP_8] = '8';
   numLockTable[VG_NP_9] = '9';
   numLockTable[VG_NP_DOT] = '.';
+
+  numLockTable[VG_NP_0 + VG_CTRL] = CTRL_MOD + '0';
+  numLockTable[VG_NP_1 + VG_CTRL] = CTRL_MOD + '1';
+  numLockTable[VG_NP_2 + VG_CTRL] = CTRL_MOD + '2';
+  numLockTable[VG_NP_3 + VG_CTRL] = CTRL_MOD + '3';
+  numLockTable[VG_NP_4 + VG_CTRL] = CTRL_MOD + '4';
+  numLockTable[VG_NP_5 + VG_CTRL] = CTRL_MOD + '5';
+  numLockTable[VG_NP_6 + VG_CTRL] = CTRL_MOD + '6';
+  numLockTable[VG_NP_7 + VG_CTRL] = CTRL_MOD + '7';
+  numLockTable[VG_NP_8 + VG_CTRL] = CTRL_MOD + '8';
+  numLockTable[VG_NP_9 + VG_CTRL] = CTRL_MOD + '9';
 
   numLockTable[VG_NP_0 + VG_SHIFT] = KEY_INSERT;
   numLockTable[VG_NP_1 + VG_SHIFT] = KEY_END;
