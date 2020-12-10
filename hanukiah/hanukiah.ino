@@ -1,6 +1,6 @@
-const int shamash = 3;  // output pin
-const int candles[8] = {4, 5, 6, 7, 8, 9, 10, 11};
-const int button = 12; // input pin
+const int shamash = 2;  // output pin
+const int candles[] = {3, 4, 5, 6, 7, 8, 9, 10};
+const int button = 11; // input pin
 
 int night = 0;
 
@@ -42,7 +42,7 @@ void loop() {
     started = millis();
 
     // for cheapo debouncing
-    delay(250);
+    delay(200);
   } else if (millis() - started > ONE_HOUR_MILLIS) {
     // Candles go out after an hour
     night = 0;
@@ -51,9 +51,9 @@ void loop() {
       digitalWrite(candles[i], LOW);
     }
   } else if (night > 0) {
-    // Fake flicker a candle
+    // Fake-flicker a candle
     int candle = random(night);
-    int iters = random(10);
+    int iters = random(5);
     for (int i = 0; i < iters; ++i) {
       digitalWrite(candles[candle], LOW);
       int offness = random(100);
