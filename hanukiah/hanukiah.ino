@@ -1,17 +1,20 @@
-const int shamash = 2;  // output pin
-const int candles[] = {3, 4, 5, 6, 7, 8, 9, 10};
+const int candles[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
 const int button = 11; // input pin
 
 int night = 0;
 
 void setup() {
+  Serial.begin(9600);
+
+  Serial.println("Hello hanukiah");
+
   // set up all outputs
-  pinMode(shamash, OUTPUT);
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i < 9; ++i) {
     pinMode(candles[i], OUTPUT);
   }
   // set up input
   pinMode(button, INPUT);
+  randomSeed(analogRead(12));
 }
 
 unsigned long started = 0L;
@@ -19,14 +22,13 @@ unsigned long started = 0L;
 
 void loop() {
   // if switch down (with debounce)
-  if (digitalRead(button) == HIGH) {
-    night = (night + 1) % 9; // yes 9, so that it maxes at 8
-
-    if (night == 0) {
-      digitalWrite(shamash, LOW);
-    } else {
-      digitalWrite(shamash, HIGH);
+  if (digitalRead(button) == LOW) {
+    Serial.println("button is pushed");
+    night = (night + 1) % 9;
+    if (night == 1) {
+      night = 2;
     }
+    Serial.print("night is now "); Serial.println(night);
 
     // Are there better ways to do this? Yes. Do I care? No.
     // Turn on the the appropriate # of candles.
@@ -46,19 +48,22 @@ void loop() {
   } else if (millis() - started > ONE_HOUR_MILLIS) {
     // Candles go out after an hour
     night = 0;
-    digitalWrite(shamash, LOW);
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 9; ++i) {
       digitalWrite(candles[i], LOW);
     }
   } else if (night > 0) {
     // Fake-flicker a candle
-    int candle = random(night);
-    int iters = random(5);
+    int iters = random(4);
     for (int i = 0; i < iters; ++i) {
-      digitalWrite(candles[candle], LOW);
-      int offness = random(100);
-      delay(offness);
-      digitalWrite(candles[candle], HIGH);
+      long candle = random(4000);
+      if (candle < night) {
+        digitalWrite(candles[candle], LOW);
+        int offness = random(50);
+        delay(offness);
+        digitalWrite(candles[candle], HIGH);
+        int onness = random(300);
+        delay(onness);
+      }
     }
   }
 }
