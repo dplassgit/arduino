@@ -36,9 +36,6 @@ const int outputEnabledPin = 2;
 void setup() {
   Serial.begin(9600);
 
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
   Serial.println("Hello xr22-950-splint for ProMicro");
 
   pinMode(outputEnabledPin, INPUT);
@@ -83,11 +80,12 @@ void setupSplintPins() {
 // Delay 1.4 microseconds. One nop = 62.5ns, so we use 22 nops (1.375 us)
 #define DELAY_1_4US "nop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\tnop\n\t"
 
-#define DEBUG 1
+#undef DEBUG
 
 #ifdef DEBUG
-#define DBG_COUNT 1000
+#define DBG_COUNT 10000
 long printed = 0; // debugging
+long iterations = 0;
 #endif
 
 void intHandler() {
@@ -103,9 +101,13 @@ void intHandler() {
         d = (inputPins & B00001000) >> 3;
     // Debugging
     Serial.print("DCBA="); Serial.print(d); Serial.print(c); Serial.print(b); Serial.println(a);
-    Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
+    if (outputPins != 0) {
+      Serial.print("sending blip on 0B"); Serial.println(outputPins, BIN);
+    }
+    iterations++;
     printed = 0;
   } else {
+    iterations++;
     printed++;
   }
 #endif
@@ -117,7 +119,7 @@ void intHandler() {
     PORTB = outputPins;
     // The hardware sends a 1.4 microsecond pulse. However we don't necessarily start the pulse
     // at the same time as the hardware would have. This can be as long as 4us.
-    __asm__(DELAY_4US);
+    __asm__(DELAY_2US);
     PORTB = B00000000;
   }
 }
