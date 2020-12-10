@@ -55,7 +55,7 @@ void loop() {
     if (useSerialLibrary) {
       Serial.print("Raw char: "); Serial.print(key); Serial.print(" decimal 0b"); Serial.println(key, BIN);
     }
-    if (key != 0) {
+    if (key != 0 && key != 255) {
       // If the keyboard has no power it will return all lows, sending back an avalanche of
       // zeros. Ignore (for now?)
       sendChar(key);
