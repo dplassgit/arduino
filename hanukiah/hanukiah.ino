@@ -1,7 +1,16 @@
-const int candles[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
+/**
+   Hanukiah sketch. Press the button to turn on another light.
+
+   The lights flicker every once in a while.
+
+   Does not require PWM!
+*/
+
+const int candlePins[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
 const int button = 11; // input pin
 
-int night = 0;
+// Number of candles on
+int numOn = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -10,7 +19,7 @@ void setup() {
 
   // set up all outputs
   for (int i = 0; i < 9; ++i) {
-    pinMode(candles[i], OUTPUT);
+    pinMode(candlePins[i], OUTPUT);
   }
   // set up input
   pinMode(button, INPUT);
@@ -24,44 +33,44 @@ void loop() {
   // if switch down (with debounce)
   if (digitalRead(button) == LOW) {
     Serial.println("button is pushed");
-    night = (night + 1) % 9;
-    if (night == 1) {
-      night = 2;
-    }
-    Serial.print("night is now "); Serial.println(night);
+    numOn = (numOn + 1) % 10; // max is 9
+    Serial.print("numOn is now "); Serial.println(numOn);
 
     // Are there better ways to do this? Yes. Do I care? No.
-    // Turn on the the appropriate # of candles.
-    for (int i = 0; i < night; ++i) {
-      digitalWrite(candles[i], HIGH);
+    // Turn off all.
+    for (int i = 0; i < 9; ++i) {
+      digitalWrite(candlePins[i], LOW);
     }
-    // Turn off the rest.
-    for (int i = night; i < 8; ++i) {
-      digitalWrite(candles[i], LOW);
+    // Turn on the the appropriate # of candles.
+    for (int i = 0; i < numOn; ++i) {
+      digitalWrite(candlePins[i], HIGH);
     }
 
-    // Started now.
+    // Record last click time, to turn off after an hour.
     started = millis();
 
-    // for cheapo debouncing
+    // For cheap "debouncing"
     delay(200);
   } else if (millis() - started > ONE_HOUR_MILLIS) {
     // Candles go out after an hour
-    night = 0;
+    numOn = 0;
     for (int i = 0; i < 9; ++i) {
-      digitalWrite(candles[i], LOW);
+      digitalWrite(candlePins[i], LOW);
     }
-  } else if (night > 0) {
-    // Fake-flicker a candle
-    int iters = random(4);
+  } else if (numOn > 0) {
+    // Fake-flicker some candles
+    int iters = random(5);
     for (int i = 0; i < iters; ++i) {
       long candle = random(4000);
-      if (candle < night) {
-        digitalWrite(candles[candle], LOW);
+      // Slows down the flickering
+      if (candle < numOn) {
+        // Turn one off for up to 50 ms
+        digitalWrite(candlePins[candle], LOW);
         int offness = random(50);
         delay(offness);
-        digitalWrite(candles[candle], HIGH);
-        int onness = random(300);
+        // Turn it back on for up to 200 ms
+        digitalWrite(candlePins[candle], HIGH);
+        int onness = random(200);
         delay(onness);
       }
     }
