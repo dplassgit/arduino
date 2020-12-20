@@ -6,8 +6,8 @@
    Does not require PWM!
 */
 
-const int candlePins[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
-const int button = 11; // input pin
+const int candlePins[] = {10, 9, 8, 7, 6, 5, 4, 3, 2};
+const int button = 19; // input pin
 
 // Number of candles on
 int numOn = 0;
