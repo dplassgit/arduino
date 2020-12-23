@@ -51,7 +51,7 @@ void setupTable() {
   setupKeyWModifiers(VG_RIGHT, KEY_RIGHT_ARROW);
 
   translationTable[VG_NP_ENTER] = KEY_RETURN;
-  translationTable[VG_NP_ENTER + VG_SHIFT] = KEY_RETURN;
+  translationTable[VG_NP_ENTER + VG_SHIFT] = SHIFT_MOD + KEY_RETURN;
 
   // Numlock off: cursor keys:
   translationTable[VG_NP_0] = KEY_INSERT;
@@ -96,11 +96,6 @@ void setupTable() {
   }
 
   // Numlock overrides:
-
-  // Not sure why I needed these...
-  numLockTable[VG_NP_ENTER] = KEY_RETURN;
-  numLockTable[VG_NP_ENTER + VG_SHIFT] = KEY_RETURN;
-
   numLockTable[VG_NP_0] = '0';
   numLockTable[VG_NP_1] = '1';
   numLockTable[VG_NP_2] = '2';
@@ -113,7 +108,7 @@ void setupTable() {
   numLockTable[VG_NP_9] = '9';
   numLockTable[VG_NP_DOT] = '.';
 
-  numLockTable[VG_NP_0 + VG_CTRL] = CTRL_MOD + '0';
+  // For future me: np0 + ctrl returns the same code as np0
   numLockTable[VG_NP_1 + VG_CTRL] = CTRL_MOD + '1';
   numLockTable[VG_NP_2 + VG_CTRL] = CTRL_MOD + '2';
   numLockTable[VG_NP_3 + VG_CTRL] = CTRL_MOD + '3';

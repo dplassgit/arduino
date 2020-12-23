@@ -98,7 +98,6 @@ int numLockTable[256];
 
 /* Send a key chord over the USB. */
 void sendChar(byte key) {
-  // TEMPORARY
   if (key == VG_F6 + VG_CTRL + VG_SHIFT) { // 246
     // Toggles the keyboard-iness
     setUseSerialLibrary(!useSerialLibrary);
@@ -107,6 +106,9 @@ void sendChar(byte key) {
   int translated = translationTable[key];
   if (numLock) {
     translated = numLockTable[key];
+  }
+  if (useSerialLibrary) {
+    Serial.print("Before: "); Serial.print(key); Serial.print(" after: "); Serial.println(translated);
   }
 
   // Figure out what to do with the key
@@ -170,7 +172,7 @@ void sendChar(byte key) {
 }
 
 void pressKey(int translated, byte key) {
-  byte rawCode = (translated & 0xff);
+  byte rawCode = (byte) (translated & 0xff);
   if (useSerialLibrary) {
     if ((translated & CTRL_MOD) == CTRL_MOD) {
       Serial.print("ctrl+");
