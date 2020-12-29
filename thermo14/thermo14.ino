@@ -8,27 +8,35 @@
 
 // Manual for library: http://lygte-info.dk/project/DisplayDriver%20UK.html
 
-dht DHT;
-const byte DHT11_PIN = 2;
-
-ThreeWire myWire(9, 8, 10); // IO, SCLK, CE
-RtcDS1302<ThreeWire> Rtc(myWire);
-
-const byte numberOfDigits = 4;
+#define numberOfDigits 16
 const byte dataPin = A4;
 const byte clockPin = A5;
 const byte loadPin = A2;
 
-LEDDisplayDriver display(dataPin, clockPin, loadPin);
+LEDDisplayDriver display(dataPin, clockPin, true, numberOfDigits);
+DISPLAY_INTR(display)
+
+char dateTimeString[30];
+
+dht DHT;
+#define DHT11_PIN 2
+
+ThreeWire myWire(9, 8, 10); // IO, SCLK, CE
+RtcDS1302<ThreeWire> Rtc(myWire);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Thermo 14");
-  Rtc.Begin();
-  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-  printDateTime(compiled);
-  Serial.println();
+  Serial.println("Thermo 14 compiled on");
 
+  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+  getDateTimeString(compiled);
+  Serial.println(dateTimeString);
+
+  display.showText("Hello thermo14");
+  delay(2000);
+
+  Serial.println("hello serial thermo14");
+  Rtc.Begin();
   if (!Rtc.IsDateTimeValid()) {
     // Common Causes:
     //    1) first time you ran and the device wasn't running yet
@@ -50,8 +58,8 @@ void setup() {
 
   RtcDateTime now = Rtc.GetDateTime();
   Serial.println("RTC says datetime is:");
-  printDateTime(now);
-  Serial.println();
+  getDateTimeString(now);
+  Serial.println(dateTimeString);
   if (now < compiled)  {
     Serial.println("RTC is older than compile time!  (Updating DateTime)");
     Rtc.SetDateTime(compiled);
@@ -63,59 +71,62 @@ void setup() {
 }
 
 
-char displayBuffer[4] = {' ', ' ', ' ', ' '};
-char dateTimeString[20];
-
 void loop() {
+  display.showText("Time is");
+  delay(2000);
   RtcDateTime now = Rtc.GetDateTime();
-  display.showTextScroll("Date/time is...    ");
-  printDateTime(now);
-  Serial.println();
-  display.showTextScroll(dateTimeString);
-  delay(500);
+  getDateTimeString(now);
+  display.showText(dateTimeString);
+  delay(2000);
 
   if (!now.IsValid()) {
     // Common Causes:
     //    1) the battery on the device is low or even missing and the power line was disconnected
     Serial.println("RTC lost confidence in the DateTime!");
+    display.showText("CLOCK BAD!?");
   }
   int chk = DHT.read11(DHT11_PIN);
   double c = DHT.temperature;
   if (c == -999) {
-    display.showTextScroll("Waiting for sensor......");
-    delay(5000);
+    display.showText("Waiting for sensor");
+    delay(2000);
     return;
   }
-  display.showTextScroll("Temperature is   ");
-  delay(300);
+  display.showText("Temperature:");
+  delay(2000);
   Serial.println(c);
-  display.clear();
   double f = (c * 9.0 / 5.0) + 32.0;
-  display.showNum(f);
   Serial.println(f);
+  display.clear();
+  display.showNum2Left(f);
 
   delay(5000);
-  display.showTextScroll("RH is   ");
+  display.showText("RH is:");
+  delay(2000);
   double rh = DHT.humidity;
   Serial.println(rh);
   display.clear();
-  display.showNum(rh);
+  display.showNum2Left(rh); display.showChar(3, '%');
 
-  delay(5000);
+  delay(2000);
 }
 
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
-void printDateTime(const RtcDateTime& dt) {
+void getDateTimeString(const RtcDateTime& dt) {
+  int hour = dt.Hour();
+  if (hour > 12) {
+    hour -= 12;
+  }
   snprintf_P(dateTimeString,
              countof(dateTimeString),
-             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-             dt.Month(),
-             dt.Day(),
-             dt.Year(),
-             dt.Hour(),
+             // PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             PSTR("%02u:%02u:%02u"),
+             //dt.Month(),
+             //dt.Day(),
+             //dt.Year(),
+             hour,
              dt.Minute(),
              dt.Second() );
-  Serial.print(dateTimeString);
 }

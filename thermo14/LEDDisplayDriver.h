@@ -46,7 +46,7 @@
 //#define _USE_TIMER4_   // Supported on Mega2560 & Mega32U4
 //#define _USE_TIMER5_   // Supported on Mega2560
 
-#define MAX_DIGITS 8    // Used to reserve frame buffer
+#define MAX_DIGITS 16    // Used to reserve frame buffer
 
 // Limits how fast the pins change state
 // Using 10 gives slow and stable signals, 1 is the fastest with any delay and 0 is crazy fast when _FAST_CLOCK_ is enabled
@@ -89,7 +89,7 @@
 
 // Display types that needs a 3. pin, i.e. load
 // The condition is reversed because most displays use 3 pins
-#if !(defined(_TM1637_) || defined(_TM1637_6DX_) || defined(_TM1637_COLON_)|| defined(_HC164_) || defined(_HT16K33_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_4D_))
+#if !(defined(_TM1637_) || defined(_TM1637_6DX_) || defined(_TM1637_COLON_)|| defined(_HC164_) || defined(_HT16K33_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_14SEG_4D_) || defined(_HT16K33_4D_))
 #define _DATA_BIDIRECTIONAL_
 #define _USE_LOAD_
 #endif
