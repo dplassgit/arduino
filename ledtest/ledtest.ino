@@ -3,7 +3,7 @@
 
 // Manual for library: http://lygte-info.dk/project/DisplayDriver%20UK.html
 
-const byte numberOfDigits = 4;
+const byte numberOfDigits = 12;
 const byte dataPin = A4;
 const byte clockPin = A5;
 const byte loadPin = A2;
@@ -12,7 +12,7 @@ LEDDisplayDriver display(dataPin, clockPin, loadPin);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Test sketch started");
+  Serial.println("Hello ledtest");
 //
 //  for (int i = 0; i < 255; ++i) {
 //    if (!isprint(i)) continue;
