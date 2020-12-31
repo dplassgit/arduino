@@ -32,7 +32,7 @@ void setup() {
   getDateTimeString(compiled);
   Serial.println(dateTimeString);
 
-  display.showText("Hello thermo14");
+  display.showTextScroll("Hello thermo14 very long should be ok");
   delay(2000);
 
   Serial.println("hello serial thermo14");
@@ -92,7 +92,7 @@ void loop() {
     delay(2000);
     return;
   }
-  display.showText("Temperature:");
+  display.showTextScroll("Temperature in fahrenheit:");
   delay(2000);
   Serial.println(c);
   double f = (c * 9.0 / 5.0) + 32.0;
