@@ -428,7 +428,14 @@ void LEDDisplayDriver::showText(const char *msg, byte first, byte count) {
 
 #ifdef _INCLUDE_SCROLLING_TEXT_
 void LEDDisplayDriver::showTextScroll(const char *msg, byte first, byte count) {
-  for (byte i = 0; i <= strlen(msg) - count; i++) {
+  byte end;
+  if (count >= strlen(msg)) {
+    end = 0;  
+  } else {
+    end = strlen(msg) - count;
+  }
+
+  for (byte i = 0; i <= end; i++) {
     showText(msg + i, first, count);
     if (!autoUpdate) update();
     delay(scrollDelay);

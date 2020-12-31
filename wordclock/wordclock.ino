@@ -26,7 +26,7 @@ void setup() {
   populateTimeString(compiled);
   Serial.println(dateTimeString);
 
-  display.showText("Hello Wordclock");
+  display.showTextScroll("Hello Wordclock");
   delay(2000);
 
   Serial.println("hello serial Wordclock");
@@ -77,7 +77,7 @@ void loop() {
     display.showText(dateTimeString);
     delay(2000);
     populateTimeString2(now);
-    display.showText(dateTimeString);
+    display.showTextScroll(dateTimeString);
   }
   delay(10000);
 }
@@ -87,7 +87,7 @@ void loop() {
 
 void populateTimeString(const RtcDateTime& dt) {
   int hour = dt.Hour();
-  boolean ampm = hour > 12;
+  boolean ampm = hour >= 12;
   if (hour > 12) {
     hour -= 12;
   }
@@ -101,11 +101,12 @@ void populateTimeString(const RtcDateTime& dt) {
 
 void populateTimeString2(const RtcDateTime& dt) {
   int hour = dt.Hour();
-  boolean ampm = hour > 12;
+  boolean ampm = hour >= 12;
   if (hour > 12) {
     hour -= 12;
   }
   int minute = dt.Minute();
+  const char *separator = " ";
   const char *hourStr = getHour(hour);
   const char *minuteStr = getMinute(minute);
   if (minute >= 33) {
@@ -116,6 +117,7 @@ void populateTimeString2(const RtcDateTime& dt) {
     if (hour == 0 || hour == 12) {
       // don't show "noon o'clock"
       minuteStr = "";
+      separator = "";
     } else {
       // swap; instead of "O'clock Ten" it's "Ten O'clock".
       const char *temp; temp = hourStr; hourStr = minuteStr; minuteStr = temp;
@@ -123,8 +125,9 @@ void populateTimeString2(const RtcDateTime& dt) {
   }
   snprintf_P(dateTimeString,
              countof(dateTimeString),
-             PSTR("%s %s"),
+             PSTR("%s%s%s"),
              minuteStr,
+             separator,
              hourStr
             );
 }
@@ -154,11 +157,11 @@ const char *getMinute(int minute) {
     case 8: case 9: case 10: case 11: case 12: case 13: return "Ten Past";
     case 14: case 15: case 16: return "Quarter Past";
     case 17: case 18: case 19: case 20: case 21: case 22: case 23: return "Twenty Past";
-    case 24: case 25: case 26: case 27: return "25 Past";
+    case 24: case 25: case 26: case 27: return "Twenty five Past";
     case 28: case 29: case 30: case 31: case 32: return "Half Past";
-    case 33: case 34: case 35: case 36: return "25 to";
+    case 33: case 34: case 35: case 36: return "Twenty five to";
     case 37: case 38: case 39: case 40: case 41: case 42: case 43: return "Twenty to";
-    case 44: case 45: case 46: return "Quarter to";
+    case 44: case 45: case 46: return "A Quarter to";
     case 47: case 48: case 49: case 50: case 51: case 52: return "Ten to";
     case 53: case 54: case 55: case 56: case 57: return "Five to";
   }
