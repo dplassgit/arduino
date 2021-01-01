@@ -8,12 +8,10 @@
 #define numberOfDigits 16
 const byte dataPin = A4;
 const byte clockPin = A5;
-const byte loadPin = A2;
 
 LEDDisplayDriver display(dataPin, clockPin, true, numberOfDigits);
-DISPLAY_INTR(display)
 
-char dateTimeString[50];
+char dateTimeString[32];
 
 ThreeWire myWire(9, 8, 10); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
@@ -56,6 +54,7 @@ void setup() {
   Serial.println(dateTimeString);
   if (now < compiled)  {
     Serial.println("RTC is older than compile time!  (Updating DateTime)");
+    display.showTextScroll("RTC is older than compile time!  (Updating DateTime)");
     Rtc.SetDateTime(compiled);
   } else if (now > compiled) {
     Serial.println("RTC is newer than compile time. (this is expected)");
@@ -71,10 +70,10 @@ void loop() {
     // Common Causes:
     //    1) the battery on the device is low or even missing and the power line was disconnected
     Serial.println("RTC lost confidence in the DateTime!");
-    display.showText("CLOCK BAD!?");
+    display.showTextScroll("CLOCK BAD!?");
   } else {
     populateTimeString(now);
-    display.showText(dateTimeString);
+    display.showTextScroll(dateTimeString);
     delay(2000);
     populateTimeString2(now);
     display.showTextScroll(dateTimeString);
@@ -106,15 +105,15 @@ void populateTimeString2(const RtcDateTime& dt) {
     hour -= 12;
   }
   int minute = dt.Minute();
+  if (minute >= 33) {
+    hour++;
+  }
   const char *separator = " ";
   const char *hourStr = getHour(hour);
   const char *minuteStr = getMinute(minute);
-  if (minute >= 33) {
-    hourStr = getHour(hour + 1);
-  }
 
   if (minute >= 58 || minute <= 3) {
-    if (hour == 0 || hour == 12) {
+    if (hour == 0 || hour == 12 || hour == 24) {
       // don't show "noon o'clock"
       minuteStr = "";
       separator = "";
@@ -161,7 +160,7 @@ const char *getMinute(int minute) {
     case 28: case 29: case 30: case 31: case 32: return "Half Past";
     case 33: case 34: case 35: case 36: return "Twenty five to";
     case 37: case 38: case 39: case 40: case 41: case 42: case 43: return "Twenty to";
-    case 44: case 45: case 46: return "A Quarter to";
+    case 44: case 45: case 46: return "Quarter to";
     case 47: case 48: case 49: case 50: case 51: case 52: return "Ten to";
     case 53: case 54: case 55: case 56: case 57: return "Five to";
   }
