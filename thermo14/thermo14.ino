@@ -11,7 +11,6 @@
 #define numberOfDigits 16
 const byte dataPin = A4;
 const byte clockPin = A5;
-const byte loadPin = A2;
 
 LEDDisplayDriver display(dataPin, clockPin, true, numberOfDigits);
 DISPLAY_INTR(display)
@@ -92,16 +91,17 @@ void loop() {
     delay(2000);
     return;
   }
-  display.showTextScroll("Temperature in fahrenheit:");
+  display.showTextScroll("Temperature (Fahrenheit)");
   delay(2000);
   Serial.println(c);
   double f = (c * 9.0 / 5.0) + 32.0;
   Serial.println(f);
   display.clear();
   display.showNum2Left(f);
+  display.showText("degrees F", 3, 16);
 
   delay(5000);
-  display.showText("RH is:");
+  display.showTextScroll("Relative humidity");
   delay(2000);
   double rh = DHT.humidity;
   Serial.println(rh);
@@ -116,17 +116,19 @@ void loop() {
 
 void getDateTimeString(const RtcDateTime& dt) {
   int hour = dt.Hour();
+  boolean pm = hour >= 12;
   if (hour > 12) {
     hour -= 12;
   }
   snprintf_P(dateTimeString,
              countof(dateTimeString),
              // PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-             PSTR("%02u:%02u:%02u"),
+             PSTR("%02u:%02u:%02u %s"),
              //dt.Month(),
              //dt.Day(),
              //dt.Year(),
              hour,
              dt.Minute(),
-             dt.Second() );
+             dt.Second(),
+             pm ? "PM" : "AM");
 }
