@@ -58,7 +58,8 @@ void setup() {
   if (now < compiled)  {
     Serial.println("RTC is older than compile time! (Updating DateTime)");
     Rtc.SetDateTime(compiled);
-    display.showTextScroll("RTC is older than compile time! (Updating DateTime)");
+    display.showText("RTC is older than compile time! (Updating DateTime)");
+    delay(1000);
   } else if (now > compiled) {
     Serial.println("RTC is newer than compile time. (this is expected)");
   } else if (now == compiled)  {
@@ -93,6 +94,9 @@ void populateTimeString(const RtcDateTime& dt) {
   boolean ampm = hour >= 12;
   if (hour > 12) {
     hour -= 12;
+  }
+  if (hour == 0) {
+    hour = 12;
   }
   snprintf_P(dateTimeString,
              countof(dateTimeString),
@@ -141,12 +145,12 @@ void populateTimeString2(const RtcDateTime& dt) {
   // I should math the shit out of this
   while (len < BUFFER_SIZE && numSpace < NUM_DIGITS) {
     numSpace++;
-    len+=2;
+    len += 2;
   }
   // Serial.print("oldlen: "); Serial.println(strlen(temp));
   // Serial.print("newlen: "); Serial.println(len);
   // Serial.print("numspace: "); Serial.println(numSpace);
-  // Clear the final destination; copy the temporary string into the right 
+  // Clear the final destination; copy the temporary string into the right
   // spot, then fix the end-of-string marker.
   memset(dateTimeString, ' ', BUFFER_SIZE);
   strcpy(&dateTimeString[numSpace], temp);
