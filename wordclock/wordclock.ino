@@ -156,8 +156,8 @@ void populateTimeString2(const RtcDateTime& dt) {
   strcpy(&dateTimeString[numSpace], temp);
   dateTimeString[numSpace + strlen(temp)] = ' ';
   dateTimeString[len] = 0;
-  Serial.print("old string: "); Serial.println(temp);
-  Serial.print("new string: ."); Serial.print(dateTimeString); Serial.println(".");
+  //Serial.print("old string: "); Serial.println(temp);
+  //Serial.print("new string: ."); Serial.print(dateTimeString); Serial.println(".");
   // .                Twenty to Four                .
   // .                Quarter to Four                .
 }
@@ -183,16 +183,16 @@ const char *getHour(int hour) {
 const char *getMinute(int minute) {
   switch (minute) {
     case 58: case 59: case 0: case 1: case 2: case 3: return "O'clock";
-    case 4: case 5: case 6: case 7: return "Five minutes Past";
+    case 4: case 5: case 6: case 7: return "Five Past";
     case 8: case 9: case 10: case 11: case 12: case 13: return "Ten Past";
-    case 14: case 15: case 16: return "A Quarter Past";
-    case 17: case 18: case 19: case 20: case 21: case 22: case 23: return "Twenty minutes Past";
+    case 14: case 15: case 16: return "Quarter Past";
+    case 17: case 18: case 19: case 20: case 21: case 22: case 23: return "Twenty Past";
     case 24: case 25: case 26: case 27: return "Twenty five Past";
     case 28: case 29: case 30: case 31: case 32: return "Half Past";
     case 33: case 34: case 35: case 36: return "Twenty five to";
-    case 37: case 38: case 39: case 40: case 41: case 42: case 43: return "Twenty minutes to";
-    case 44: case 45: case 46: return "A Quarter to";
+    case 37: case 38: case 39: case 40: case 41: case 42: case 43: return "Twenty to";
+    case 44: case 45: case 46: return "Quarter to";
     case 47: case 48: case 49: case 50: case 51: case 52: return "Ten to";
-    case 53: case 54: case 55: case 56: case 57: return "Five minutes to";
+    case 53: case 54: case 55: case 56: case 57: return "Five to";
   }
 }
