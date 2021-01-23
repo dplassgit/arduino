@@ -46,7 +46,7 @@
 //#define _USE_TIMER4_   // Supported on Mega2560 & Mega32U4
 //#define _USE_TIMER5_   // Supported on Mega2560
 
-#define MAX_DIGITS 8    // Used to reserve frame buffer
+#define MAX_DIGITS 16    // Used to reserve frame buffer
 
 // Limits how fast the pins change state
 // Using 10 gives slow and stable signals, 1 is the fastest with any delay and 0 is crazy fast when _FAST_CLOCK_ is enabled
@@ -89,7 +89,7 @@
 
 // Display types that needs a 3. pin, i.e. load
 // The condition is reversed because most displays use 3 pins
-#if !(defined(_TM1637_) || defined(_TM1637_6DX_) || defined(_TM1637_COLON_)|| defined(_HC164_) || defined(_HT16K33_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_4D_))
+#if !(defined(_TM1637_) || defined(_TM1637_6DX_) || defined(_TM1637_COLON_)|| defined(_HC164_) || defined(_HT16K33_8D_) || defined(_HT16K33_14SEG_8D_) || defined(_HT16K33_14SEG_4D_) || defined(_HT16K33_4D_))
 #define _DATA_BIDIRECTIONAL_
 #define _USE_LOAD_
 #endif
@@ -869,7 +869,7 @@ const DIGIT_TYPE digitG = SEG_A | SEG_C | SEG_D | SEG_E | SEG_F  | SEG_H;
 const DIGIT_TYPE digitH = SEG_B | SEG_C | SEG_E | SEG_F | SEG_G  | SEG_H;
 const DIGIT_TYPE digitI = SEG_A | SEG_D | SEG_L | SEG_O;
 const DIGIT_TYPE digitJ = SEG_B | SEG_C | SEG_D | SEG_E;
-const DIGIT_TYPE digitK = SEG_E | SEG_F | SEG_G | SEG_M | SEG_P;
+const DIGIT_TYPE digitK = SEG_E | SEG_F | SEG_G | SEG_M | SEG_H | SEG_C;
 const DIGIT_TYPE digitL = SEG_D | SEG_E | SEG_F;
 const DIGIT_TYPE digitM = SEG_B | SEG_C | SEG_E | SEG_F | SEG_K | SEG_M;
 const DIGIT_TYPE digitN = SEG_B | SEG_C | SEG_E | SEG_F | SEG_K | SEG_P;
