@@ -13,14 +13,12 @@ LEDDisplayDriver display(dataPin, clockPin, loadPin);
 void setup() {
   Serial.begin(9600);
   Serial.println("Hello ledtest");
-  //
-  //  for (int i = 0; i < 255; ++i) {
-  //    if (!isprint(i)) continue;
-  //    display.showChar(i % 4, i);
-  //    delay(200);
-  //  }
-  // // display.showDigit(SEG_A | SEG_B | SEG_H | SEG_G | SEG_F, 0);
-  //  delay(5000);
+
+  for (int i = 0; i < 255; ++i) {
+    if (!isprint(i)) continue;
+    display.showChar(i % numberOfDigits, i);
+    delay(200);
+  }
   display.showTextScroll("Tell me something");
 }
 
