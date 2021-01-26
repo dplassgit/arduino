@@ -3,20 +3,19 @@
 
 // Manual for library: http://lygte-info.dk/project/DisplayDriver%20UK.html
 
-const byte numberOfDigits = 16;
-const byte dataPin = A4;
-const byte clockPin = A5;
-const byte loadPin = A2;
+#define NUM_DIGITS 16
+const byte dataPin = D0;
+const byte clockPin = D1;
 
-LEDDisplayDriver display(dataPin, clockPin, loadPin);
+LEDDisplayDriver display(dataPin, clockPin, true, NUM_DIGITS);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Hello ledtest");
 
   for (int i = 0; i < 255; ++i) {
     if (!isprint(i)) continue;
-    display.showChar(i % numberOfDigits, i);
+    display.showChar(i % NUM_DIGITS, i);
     delay(200);
   }
   display.showTextScroll("Tell me something");

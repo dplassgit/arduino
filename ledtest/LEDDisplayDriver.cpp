@@ -9,6 +9,7 @@
 // There is nothing to adjust in this module, everything is controlled from the .h file.
 // By HKJ from lygte-info.dk
 
+#define min(a,b) ((a<b)?a:b)
 
 const DIGIT_TYPE segmentPatterns[] = {
   digit0, digit1, digit2, digit3, digit4, digit5, digit6, digit7,
