@@ -181,11 +181,12 @@ ICACHE_RAM_ATTR void intHandler() {
 
 void handleRoot() {
   Serial.println("Handling /");
+  long now = millis();
   char buffer[200];
   sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\n",
-          text[0], when[0] / 1000,
-          text[1], when[1] / 1000,
-          text[2], when[2] / 1000);
+          text[0], (now - when[0]) / 1000,
+          text[1], (now - when[1]) / 1000,
+          text[2], (now - when[2]) / 1000);
   Serial.println(buffer);
   server.send(200, "text/plain", buffer); // "Hello from esp8266 over HTTPS!");
 }
