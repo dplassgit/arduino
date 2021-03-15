@@ -30,7 +30,8 @@ void setup() {
   Serial.println("Hello nrf_sender");
   radio.begin();
   radio.setChannel(0x66);
-
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setRetries(15, 15);
 
   //set the address
   radio.openWritingPipe(address);
@@ -54,7 +55,7 @@ void loop() {
   // Send command to all the sensors for temperature conversion
   sensors.requestTemperatures();
   float sendingTemp;
-  
+
   // Display temperature from each sensor
   for (int i = 0; i < deviceCount; ++i) {
     Serial.print(i);
@@ -71,10 +72,11 @@ void loop() {
   }
 
   // Send message to receiver
-  char text[31];// = " Hello World";
+  char text[32];// = " Hello World";
   snprintf_P(text,
              countof(text),
-             PSTR(" g: %d F"),
+             // CHANGE ME:
+             PSTR(" A: %d F"),
              (int)sendingTemp
             );
   text[0] = 'A' + counter;
