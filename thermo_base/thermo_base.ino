@@ -127,8 +127,8 @@ void setup() {
     delay(500);
     display.showText(".", dot++, 1);
   }
-  if (MDNS.begin("esp8266")) {
-    display.showTextScroll("MDNS responder started");
+  if (MDNS.begin("base")) {
+    display.showTextScroll("https://base.local     ");
   }
 
   Serial.print("IP address: ");
@@ -191,28 +191,32 @@ void handleRoot() {
 
 int source = 0;
 long lastShown = 0;
+
 void loop() {
   long now = millis();
   if (lastShown == 0 || now - lastShown > 4000) {
     // yes this fails for rollover
     lastShown = now;
     if (when[source] != 0) {
-      display.showNum((now - when[source]) / 1000, 8, 8);
+      long secondsSince = (now - when[source])/1000;
+      display.showNum(secondsSince, 8, 8);
       display.showText(text[source], 0, 13);
-      long now = millis();
+      if (secondsSince > 99) {
+        when[source] = 0;
+      }
     } else {
-      display.showText("NO DATA", 0, 8);
       switch (source) {
         case 0:
-          display.showText("Basement", 8, 8);
+          display.showText("Basement", 0, 8);
           break;
         case 1:
-          display.showText("Aaron's", 8, 8);
+          display.showText("Aaron's", 0, 8);
           break;
         case 2:
-          display.showText("Garage", 8, 8);
+          display.showText("Garage", 0, 8);
           break;
       }
+      display.showText("NO DATA", 8, 8);
     }
     source++;
     if (source == 3) source = 0;
