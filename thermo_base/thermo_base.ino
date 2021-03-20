@@ -129,12 +129,10 @@ void setup() {
   }
   if (MDNS.begin("esp8266")) {
     display.showTextScroll("MDNS responder started");
-    delay(2000);
   }
 
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  display.showText("IP Addr:");
 
   radio.begin();
   radio.setChannel(0x66);
@@ -147,7 +145,7 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(intPin), intHandler, FALLING);
 
-  display.showTextScroll("                LISTENING                ");
+  display.showTextScroll("                LISTENING");
 
   server.getServer().setServerKeyAndCert_P(rsakey, sizeof(rsakey), x509, sizeof(x509));
   server.on("/", handleRoot);
@@ -199,8 +197,9 @@ void loop() {
     // yes this fails for rollover
     lastShown = now;
     if (when[source] != 0) {
-      display.showText(text[source], 0, 8);
-      display.showNum(when[source] / 1000, 8, 8);
+      display.showNum((now - when[source]) / 1000, 8, 8);
+      display.showText(text[source], 0, 13);
+      long now = millis();
     } else {
       display.showText("NO DATA", 0, 8);
       switch (source) {
