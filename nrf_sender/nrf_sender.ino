@@ -1,4 +1,3 @@
-//Include Libraries
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
@@ -7,10 +6,20 @@
 #include <DallasTemperature.h>
 
 #include <ThreeWire.h>
-// #include <dht.h>
 
+#undef BASEMENT
+#undef AARON
+#undef GARAGE
+
+#define AARON
+
+#if defined(AARON) || defined(GARAGE)
 // Data wire is plugged into digital pin 7 on the Arduino
 #define ONE_WIRE_BUS 7
+#else
+// Data wire is plugged into digital pin 7 on the Basement pcb
+#define ONE_WIRE_BUS 2
+#endif
 
 // Setup a oneWire instance to communicate with any OneWire device
 OneWire oneWire(ONE_WIRE_BUS);
@@ -71,13 +80,25 @@ void loop() {
     Serial.println("F");
   }
 
+  int vcc = (int) readVcc();
+
   // Send message to receiver
-  char text[32];// = " Hello World";
+  char text[32];
+  const char *pattern;
+#ifdef GARAGE
+  pattern = PSTR(" G: %d F %d V");
+#endif
+#ifdef BASEMENT
+  pattern = PSTR(" b: %d F %d V");
+#endif
+#ifdef AARON
+  pattern = PSTR(" A: %d F %d V");
+#endif
   snprintf_P(text,
              countof(text),
-             // CHANGE ME:
-             PSTR(" A: %d F"),
-             (int)sendingTemp
+             pattern,
+             (int)sendingTemp,
+             vcc
             );
   text[0] = 'A' + counter;
   Serial.print("Trying to send "); Serial.println(text);
@@ -89,4 +110,32 @@ void loop() {
   if (counter == 26) counter = 0;
 
   delay(5000);
+}
+
+long readVcc() {
+  long result; // Read 1.1V reference against AVcc
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+
+  delay(2);
+  // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC);
+  // Convert
+  while (bit_is_set(ADCSRA, ADSC));
+  result = ADCL;
+  result |= ADCH << 8;
+
+#ifdef BASEMENT
+  // Accurate to within 10mv on the basement Nano
+  result = 1008000L / result;
+#endif
+#ifdef GARAGE
+  // Accurate to within 10mv on the garage Nano
+  result = 1005000L / result;
+#endif
+#ifdef AARON
+  // This is accurate to within 10mv on the Aaron Nano
+  result = 1020000L / result;
+#endif
+  // Back-calculate AVcc in mV
+  return result;
 }
