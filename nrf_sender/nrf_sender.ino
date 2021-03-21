@@ -1,11 +1,11 @@
-#include <SPI.h>
-#include <nRF24L01.h>
+// #include <SPI.h>
+// #include <nRF24L01.h>
 #include <RF24.h>
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#include <ThreeWire.h>
+// #include <ThreeWire.h>
 
 #undef BASEMENT
 #undef AARON
@@ -14,51 +14,62 @@
 #define AARON
 
 #if defined(AARON) || defined(GARAGE)
-// Data wire is plugged into digital pin 7 on the Arduino
+// Data wire is plugged into digital pin 7 on the breadboards
 #define ONE_WIRE_BUS 7
 #else
-// Data wire is plugged into digital pin 7 on the Basement pcb
+// Data wire is plugged into digital pin 2 on the pcbs
 #define ONE_WIRE_BUS 2
 #endif
 
-// Setup a oneWire instance to communicate with any OneWire device
+// Set up a oneWire instance to communicate with any OneWire device
 OneWire oneWire(ONE_WIRE_BUS);
 
 // Pass oneWire reference to DallasTemperature library
 DallasTemperature sensors(&oneWire);
+// Number of thermometers
+int deviceCount;
 
-//create an RF24 object
+// NRF24L01+ 
 RF24 radio(9, 8);  // CE, CSN
 
-//address through which two modules communicate.
+// Address through which two modules communicate.
 const byte address[6] = "flori";
 
-int deviceCount;
+
 void setup() {
   Serial.begin(9600);
   Serial.println("Hello nrf_sender");
+
   radio.begin();
   radio.setChannel(0x66);
   radio.setPALevel(RF24_PA_MAX);
   radio.setRetries(15, 15);
 
-  //set the address
+  // Set the address
   radio.openWritingPipe(address);
 
-  //Set module as transmitter
+  // Set this module as transmitter
   radio.stopListening();
-  sensors.begin();  // Start up the library
 
-  Serial.print("Locating devices...");
+  sensors.begin();  // Start up the DS18B library
+
+  Serial.print("Locating DS18Bs...");
   Serial.print("Found ");
   deviceCount = sensors.getDeviceCount();
-  Serial.print(deviceCount, DEC);
+  Serial.print(deviceCount);
   Serial.println(" devices.");
 }
 
 int counter = 0;
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
+
+struct Data {
+  float tempF;
+  int voltage;
+  char counter;
+  char id;
+};
 
 void loop() {
   // Send command to all the sensors for temperature conversion
@@ -80,29 +91,38 @@ void loop() {
     Serial.println("F");
   }
 
-  int vcc = (int) readVcc();
 
   // Send message to receiver
-  char text[32];
+  struct Data data;
   const char *pattern;
 #ifdef GARAGE
+  data.id = 'G';
   pattern = PSTR(" G: %d F %d V");
 #endif
 #ifdef BASEMENT
+  data.id = 'b';
   pattern = PSTR(" b: %d F %d V");
 #endif
 #ifdef AARON
+  data.id = 'A';
   pattern = PSTR(" A: %d F %d V");
 #endif
+  data.tempF = sendingTemp;
+  int vcc = (int) readVcc();
+  data.voltage = vcc;
+  data.counter =  'A' + counter;
+
+  char text[32];
   snprintf_P(text,
              countof(text),
              pattern,
              (int)sendingTemp,
              vcc
             );
-  text[0] = 'A' + counter;
+  text[0] = data.counter;
   Serial.print("Trying to send "); Serial.println(text);
-  if (!radio.write(&text, sizeof(text))) {
+  
+  if (!radio.write(&data, sizeof(data))) {
     Serial.println("Not connected?");
   }
   Serial.println("Sent, waiting 5 secs");
@@ -113,17 +133,20 @@ void loop() {
 }
 
 long readVcc() {
-  long result; // Read 1.1V reference against AVcc
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
 
-  delay(2);
   // Wait for Vref to settle
+  delay(10);
+
   ADCSRA |= _BV(ADSC);
   // Convert
   while (bit_is_set(ADCSRA, ADSC));
-  result = ADCL;
+
+  // Read 1.1V reference against AVcc
+  long result = ADCL;
   result |= ADCH << 8;
 
+  // Back-calculate AVcc in mV
 #ifdef BASEMENT
   // Accurate to within 10mv on the basement Nano
   result = 1008000L / result;
@@ -136,6 +159,5 @@ long readVcc() {
   // This is accurate to within 10mv on the Aaron Nano
   result = 1020000L / result;
 #endif
-  // Back-calculate AVcc in mV
   return result;
 }
