@@ -1,11 +1,7 @@
-// #include <SPI.h>
-// #include <nRF24L01.h>
 #include <RF24.h>
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
-
-// #include <ThreeWire.h>
 
 #undef BASEMENT
 #undef AARON
@@ -13,13 +9,11 @@
 
 #define AARON
 
-#if defined(AARON) || defined(GARAGE)
 // Data wire is plugged into digital pin 7 on the breadboards
-#define ONE_WIRE_BUS 7
-#else
+// #define ONE_WIRE_BUS 7
+
 // Data wire is plugged into digital pin 2 on the pcbs
 #define ONE_WIRE_BUS 2
-#endif
 
 // Set up a oneWire instance to communicate with any OneWire device
 OneWire oneWire(ONE_WIRE_BUS);
@@ -122,7 +116,8 @@ void loop() {
   text[0] = data.counter;
   Serial.print("Trying to send "); Serial.println(text);
   
-  if (!radio.write(&data, sizeof(data))) {
+//  if (!radio.write(&data, sizeof(data))) {
+  if (!radio.write(&text, sizeof(text))) {
     Serial.println("Not connected?");
   }
   Serial.println("Sent, waiting 5 secs");
