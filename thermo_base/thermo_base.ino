@@ -3,8 +3,6 @@
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266mDNS.h>
 
-#include <SPI.h>
-#include <nRF24L01.h>
 #include <RF24.h>
 
 #define min(a,b) ((a<b)?a:b)
@@ -127,9 +125,7 @@ void setup() {
     delay(500);
     display.showText(".", dot++, 1);
   }
-  if (MDNS.begin("base")) {
-    display.showTextScroll("https://base.local     ");
-  }
+  MDNS.begin("base");
 
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -137,15 +133,14 @@ void setup() {
   radio.begin();
   radio.setChannel(0x66);
   radio.setPALevel(RF24_PA_MAX);
+
   // set the address
-  radio.openReadingPipe(0, address);
+  radio.openReadingPipe(1, address);
 
   //Set module as receiver
   radio.startListening();
 
   attachInterrupt(digitalPinToInterrupt(intPin), intHandler, FALLING);
-
-  display.showTextScroll("                LISTENING");
 
   server.getServer().setServerKeyAndCert_P(rsakey, sizeof(rsakey), x509, sizeof(x509));
   server.on("/", handleRoot);
@@ -186,7 +181,7 @@ void handleRoot() {
           text[1], (now - when[1]) / 1000,
           text[2], (now - when[2]) / 1000);
   Serial.println(buffer);
-  server.send(200, "text/plain", buffer); // "Hello from esp8266 over HTTPS!");
+  server.send(200, "text/plain", buffer);
 }
 
 int source = 0;
@@ -197,13 +192,11 @@ void loop() {
   if (lastShown == 0 || now - lastShown > 4000) {
     // yes this fails for rollover
     lastShown = now;
-    if (when[source] != 0) {
-      long secondsSince = (now - when[source])/1000;
+    long secondsSince = (now - when[source]) / 1000;
+
+    if (secondsSince < 99 && when[source] != 0) {
       display.showNum(secondsSince, 8, 8);
       display.showText(text[source], 0, 13);
-      if (secondsSince > 99) {
-        when[source] = 0;
-      }
     } else {
       switch (source) {
         case 0:
@@ -218,9 +211,12 @@ void loop() {
       }
       display.showText("NO DATA", 8, 8);
     }
+
     source++;
     if (source == 3) source = 0;
+
+    MDNS.update();
   }
+
   server.handleClient();
-  MDNS.update();
 }
