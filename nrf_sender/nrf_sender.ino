@@ -1,5 +1,4 @@
 #include <RF24.h>
-
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -7,10 +6,9 @@
 #undef AARON
 #undef GARAGE
 
-#define AARON
+#define BASEMENT
 
-// Data wire is plugged into digital pin 7 on the breadboards
-// #define ONE_WIRE_BUS 7
+#define MAX_TRIES 5
 
 // Data wire is plugged into digital pin 2 on the pcbs
 #define ONE_WIRE_BUS 2
@@ -23,7 +21,7 @@ DallasTemperature sensors(&oneWire);
 // Number of thermometers
 int deviceCount;
 
-// NRF24L01+ 
+// NRF24L01+
 RF24 radio(9, 8);  // CE, CSN
 
 // Address through which two modules communicate.
@@ -39,11 +37,11 @@ void setup() {
   radio.setPALevel(RF24_PA_MAX);
   radio.setRetries(15, 15);
 
-  // Set the address
-  radio.openWritingPipe(address);
-
   // Set this module as transmitter
   radio.stopListening();
+
+  // Set the address
+  radio.openWritingPipe(address);
 
   sensors.begin();  // Start up the DS18B library
 
@@ -85,7 +83,6 @@ void loop() {
     Serial.println("F");
   }
 
-
   // Send message to receiver
   struct Data data;
   const char *pattern;
@@ -115,12 +112,18 @@ void loop() {
             );
   text[0] = data.counter;
   Serial.print("Trying to send "); Serial.println(text);
-  
-//  if (!radio.write(&data, sizeof(data))) {
-  if (!radio.write(&text, sizeof(text))) {
-    Serial.println("Not connected?");
+
+  //  if (!radio.write(&data, sizeof(data))) {
+  int tries = 0;
+  for (; tries < MAX_TRIES && !radio.write(&text, sizeof(text)); ++tries ) {
+    Serial.println("Not connected...");
+    delay((tries + 1) * 300);
   }
-  Serial.println("Sent, waiting 5 secs");
+  if (tries == MAX_TRIES) {
+    Serial.println("Gave up...");
+  } else {
+    Serial.println("Sent!");
+  }
   counter++;
   if (counter == 26) counter = 0;
 
