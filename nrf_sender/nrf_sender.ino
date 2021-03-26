@@ -2,13 +2,26 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#undef BASEMENT
-#undef AARON
-#undef GARAGE
+#define countof(a) (sizeof(a) / sizeof(a[0]))
 
-#define BASEMENT
+// A=Aaron's room
+// b=basement
+// D=Den
+// g or G=garage
+// F=Florida room
+// K=Kitchen
+// M=Master br
+// O=Office
+#define ID 'b'
 
-#define MAX_TRIES 5
+// Basement:
+#define VCC_FACTOR 1008000L
+// Garage:
+// #define VCC_FACTOR 1005000L
+// Aaron:
+// #define VCC_FACTOR 1020000L
+
+#define MAX_TRIES 4
 
 // Data wire is plugged into digital pin 2 on the pcbs
 #define ONE_WIRE_BUS 2
@@ -27,6 +40,13 @@ RF24 radio(9, 8);  // CE, CSN
 // Address through which two modules communicate.
 const byte address[6] = "flori";
 
+// Data sent to the base
+struct Data {
+  float tempF;
+  int voltage;  // mV
+  char id;      // See ID, above
+  char counter; // Counter, A-Z
+};
 
 void setup() {
   Serial.begin(9600);
@@ -54,18 +74,11 @@ void setup() {
 
 int counter = 0;
 
-#define countof(a) (sizeof(a) / sizeof(a[0]))
-
-struct Data {
-  float tempF;
-  int voltage;
-  char counter;
-  char id;
-};
 
 void loop() {
   // Send command to all the sensors for temperature conversion
   sensors.requestTemperatures();
+
   float sendingTemp;
 
   // Display temperature from each sensor
@@ -85,19 +98,7 @@ void loop() {
 
   // Send message to receiver
   struct Data data;
-  const char *pattern;
-#ifdef GARAGE
-  data.id = 'G';
-  pattern = PSTR(" G: %d F %d V");
-#endif
-#ifdef BASEMENT
-  data.id = 'b';
-  pattern = PSTR(" b: %d F %d V");
-#endif
-#ifdef AARON
-  data.id = 'A';
-  pattern = PSTR(" A: %d F %d V");
-#endif
+  data.id = ID;
   data.tempF = sendingTemp;
   int vcc = (int) readVcc();
   data.voltage = vcc;
@@ -106,7 +107,8 @@ void loop() {
   char text[32];
   snprintf_P(text,
              countof(text),
-             pattern,
+             PSTR(" %c: %d F %d V"),
+             data.id,
              (int)sendingTemp,
              vcc
             );
@@ -130,6 +132,7 @@ void loop() {
   delay(5000);
 }
 
+
 long readVcc() {
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
 
@@ -145,17 +148,6 @@ long readVcc() {
   result |= ADCH << 8;
 
   // Back-calculate AVcc in mV
-#ifdef BASEMENT
-  // Accurate to within 10mv on the basement Nano
-  result = 1008000L / result;
-#endif
-#ifdef GARAGE
-  // Accurate to within 10mv on the garage Nano
-  result = 1005000L / result;
-#endif
-#ifdef AARON
-  // This is accurate to within 10mv on the Aaron Nano
-  result = 1020000L / result;
-#endif
+  result = VCC_FACTOR / result;
   return result;
 }
