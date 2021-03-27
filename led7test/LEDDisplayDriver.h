@@ -689,8 +689,8 @@ const DIGIT_TYPE digit9 = SEG_A | SEG_B | SEG_C | SEG_D | SEG_F | SEG_G;
 
 // Ascii symbols
 const DIGIT_TYPE digitSpace = 0;
-const DIGIT_TYPE digitQuote2 =  SEG_B | SEG_F;
-const DIGIT_TYPE digitQuote1 =  SEG_B;
+const DIGIT_TYPE digitQuote2 = SEG_B | SEG_F;
+const DIGIT_TYPE digitQuote1 = SEG_B;
 const DIGIT_TYPE digitDollar = SEG_A | SEG_C | SEG_D | SEG_F | SEG_G;
 const DIGIT_TYPE digitOpen = SEG_A | SEG_D | SEG_E | SEG_F;  // Opening bracket [
 const DIGIT_TYPE digitClose = SEG_A | SEG_B | SEG_C | SEG_D;  // Closing bracket ]
@@ -698,15 +698,14 @@ const DIGIT_TYPE digitAsterix = 0;
 const DIGIT_TYPE digitPlus = 0;
 const DIGIT_TYPE digitDp = SEG_DP;              // Decimal point or colon
 const DIGIT_TYPE digitMinus = SEG_G;
-const DIGIT_TYPE digitSlash = digit1;
+const DIGIT_TYPE digitSlash = SEG_B | SEG_E | SEG_G;
 const DIGIT_TYPE digitLT = 0;
 const DIGIT_TYPE digitEqual = SEG_D | SEG_G;
 const DIGIT_TYPE digitGT = 0;
-const DIGIT_TYPE digitBackslash = digit1;
+const DIGIT_TYPE digitBackslash = SEG_F | SEG_G | SEG_C;
 const DIGIT_TYPE digitUnderscore = SEG_D;
 const DIGIT_TYPE digitVerticalslash = digit1;
-
-
+const DIGIT_TYPE digitCaret = SEG_A | SEG_B | SEG_F | SEG_G;  // Degree symbol
 
 // Upper case letters, some of the letters are very bad.
 const DIGIT_TYPE digitA = SEG_A | SEG_B | SEG_C | SEG_E | SEG_F | SEG_G;
@@ -717,7 +716,7 @@ const DIGIT_TYPE digitE = SEG_A | SEG_D | SEG_E | SEG_F | SEG_G;
 const DIGIT_TYPE digitF = SEG_A | SEG_E | SEG_F | SEG_G;
 const DIGIT_TYPE digitG = SEG_A | SEG_C | SEG_D | SEG_E | SEG_F;
 const DIGIT_TYPE digitH = SEG_B | SEG_C | SEG_E | SEG_F | SEG_G;
-const DIGIT_TYPE digitI = SEG_B | SEG_C;
+const DIGIT_TYPE digitI = SEG_E | SEG_F;
 const DIGIT_TYPE digitJ = SEG_B | SEG_C | SEG_D | SEG_E;
 const DIGIT_TYPE digitK = SEG_A | SEG_C | SEG_E | SEG_F | SEG_G;
 const DIGIT_TYPE digitL = SEG_D | SEG_E | SEG_F;
@@ -737,11 +736,11 @@ const DIGIT_TYPE digitY = SEG_B | SEG_C | SEG_D | SEG_F | SEG_G;
 const DIGIT_TYPE digitZ = digit2;
 
 // Lower case letters, many are the same as upper case
-const DIGIT_TYPE digita = SEG_G | SEG_E | SEG_D | SEG_C | SEG_B | SEG_A;
+const DIGIT_TYPE digita = digitA;
 const DIGIT_TYPE digitb = digitB;
 const DIGIT_TYPE digitc = SEG_D | SEG_E | SEG_G;
 const DIGIT_TYPE digitd = digitD;
-const DIGIT_TYPE digite = SEG_G | SEG_B | SEG_A | SEG_F | SEG_E | SEG_D;
+const DIGIT_TYPE digite = digitE;
 const DIGIT_TYPE digitf = digitF;
 const DIGIT_TYPE digitg = digitG;
 const DIGIT_TYPE digith = SEG_C | SEG_E | SEG_F | SEG_G;
@@ -785,7 +784,7 @@ const DIGIT_TYPE digitRightTop1 = SEG_B;
 const DIGIT_TYPE digitLeft1 = SEG_E | SEG_F;
 const DIGIT_TYPE digitRight1 = SEG_C | SEG_B;
 
-const DIGIT_TYPE digitExclamation = digit1;
+const DIGIT_TYPE digitExclamation = SEG_B | SEG_DP;
 const DIGIT_TYPE digitPercent = SEG_B | SEG_E;
 const DIGIT_TYPE digitAmpersand = digitEmpty;
 const DIGIT_TYPE digitOpenParen = digitC;
