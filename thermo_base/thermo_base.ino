@@ -107,9 +107,12 @@ RF24 radio(D0, D8);  // CE, CSN
 // address through which two modules communicate.
 const byte address[6] = "flori";
 
+#define NUM_REMOTES 4
+
 // 0=basement, 1=aaron, 2=garage, 3= Office
-char text[4][32] = {0};
-long when[4];
+char text[NUM_REMOTES][32] = {0};
+long when[NUM_REMOTES];
+int missed[NUM_REMOTES];
 
 void setup() {
   Serial.begin(115200);
@@ -145,6 +148,10 @@ void setup() {
   server.getServer().setServerKeyAndCert_P(rsakey, sizeof(rsakey), x509, sizeof(x509));
   server.on("/", handleRoot);
   server.begin();
+  for (int i = 0; i < NUM_REMOTES; ++i) {
+    missed[i] = 0;
+    when[i] = 0;
+  }
 }
 
 ICACHE_RAM_ATTR void intHandler() {
@@ -163,6 +170,13 @@ ICACHE_RAM_ATTR void intHandler() {
       slot = 2;
     } else if (temp[1] == 'O') {
       slot = 3;
+    }
+    if (when[slot] != 0) {
+      // see if we missed one
+      if ((temp[0] != text[slot][0] && temp[0] != text[slot][0] + 1) || (temp[0] == 'A' && text[slot][0] != 'Z')) {
+        missed[slot]++;
+        Serial.print("Missed "); Serial.print(missed[slot]); Serial.print(" from "); Serial.println(temp[1]);
+      }
     }
     char *dest = &(text[slot][0]);
     strcpy(dest, &temp[0]);
