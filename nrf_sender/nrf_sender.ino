@@ -12,7 +12,7 @@
 // K=Kitchen
 // M=Master br
 // O=Office
-#define ID 'b'
+#define ID 'O'
 
 // Basement:
 #define VCC_FACTOR 1008000L

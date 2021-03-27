@@ -107,9 +107,9 @@ RF24 radio(D0, D8);  // CE, CSN
 // address through which two modules communicate.
 const byte address[6] = "flori";
 
-// 0=basement, 1=aaron, 2=garage
-char text[3][32] = {0};
-long when[3];
+// 0=basement, 1=aaron, 2=garage, 3= Office
+char text[4][32] = {0};
+long when[4];
 
 void setup() {
   Serial.begin(115200);
@@ -161,6 +161,8 @@ ICACHE_RAM_ATTR void intHandler() {
       slot = 1;
     } else if (temp[1] == 'G' || temp[1] == 'g') {
       slot = 2;
+    } else if (temp[1] == 'O') {
+      slot = 3;
     }
     char *dest = &(text[slot][0]);
     strcpy(dest, &temp[0]);
@@ -176,10 +178,11 @@ void handleRoot() {
   Serial.println("Handling /");
   long now = millis();
   char buffer[200];
-  sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\n",
+  sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\nOffice: %s at %d",
           text[0], (now - when[0]) / 1000,
           text[1], (now - when[1]) / 1000,
-          text[2], (now - when[2]) / 1000);
+          text[2], (now - when[2]) / 1000,
+          text[3], (now - when[3]) / 1000);
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -208,12 +211,15 @@ void loop() {
         case 2:
           display.showText("Garage", 0, 8);
           break;
+        case 3:
+          display.showText("Office", 0, 8);
+          break;
       }
       display.showText("NO DATA", 8, 8);
     }
 
     source++;
-    if (source == 3) source = 0;
+    if (source == 4) source = 0;
 
     MDNS.update();
   }
