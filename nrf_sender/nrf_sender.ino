@@ -1,6 +1,7 @@
 #include <RF24.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "data.h"
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
@@ -12,12 +13,12 @@
 // H=Here (Kitchen)
 // M=Master br
 // O=Office
-#define ID 'H'
+#define ID 'G'
 
 // Basement:
-#define VCC_FACTOR 1008000L
+// #define VCC_FACTOR 1008000L
 // Garage:
-// #define VCC_FACTOR 1005000L
+#define VCC_FACTOR 1005000L
 // Aaron:
 // #define VCC_FACTOR 1020000L
 
@@ -40,15 +41,11 @@ RF24 radio(9, 8);  // CE, CSN
 // Address through which two modules communicate.
 const byte address[6] = "flori";
 
-// Data sent to the base
-struct Data {
-  float tempF;
-  int voltage;  // mV
-  char id;      // See ID, above
-  char counter; // Counter, A-Z
-};
+
+struct Data data;
 
 void setup() {
+  data.id = ID;
   Serial.begin(9600);
   Serial.println("Hello nrf_sender");
 
@@ -74,7 +71,6 @@ void setup() {
 
 int counter = 0;
 
-
 void loop() {
   // Send command to all the sensors for temperature conversion
   sensors.requestTemperatures();
@@ -97,27 +93,30 @@ void loop() {
   }
 
   // Send message to receiver
-  struct Data data;
-  data.id = ID;
   data.tempF = sendingTemp;
-  int vcc = (int) readVcc();
+  short vcc = (short) readVcc();
   data.voltage = vcc;
-  data.counter =  'A' + counter;
+  data.counter = 'A' + counter;
 
   char text[32];
   snprintf_P(text,
              countof(text),
-             PSTR(" %c: %d F %d V"),
+             PSTR("%c%c: %d F %d V"),
+             data.counter,
              data.id,
-             (int)sendingTemp,
-             vcc
+             (short)data.tempF,
+             data.voltage
             );
-  text[0] = data.counter;
-  Serial.print("Trying to send "); Serial.println(text);
+  Serial.print("Trying to send equivalent of: "); Serial.println(text);
+  byte *bytes = (byte*)&data;
+  Serial.print("Bytes are: ");
+  for (int i = 0; i < 8; ++i) {
+    Serial.print(bytes[i], DEC); Serial.print(" ");
+  }
+  Serial.println();
 
-  //  if (!radio.write(&data, sizeof(data))) {
   int tries = 0;
-  for (; tries < MAX_TRIES && !radio.write(&text, sizeof(text)); ++tries ) {
+  for (; tries < MAX_TRIES && !radio.write((byte *)&data, sizeof(data)); ++tries ) {
     Serial.println("Not connected...");
     delay((tries + 1) * 300);
   }

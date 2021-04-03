@@ -10,6 +10,7 @@
 
 #include "LEDDisplayDriver.h"
 #include "config.h"
+#include "data.h"
 
 #ifndef STASSID
 #define STASSID ""
@@ -112,6 +113,7 @@ const byte address[6] = "flori";
 
 // 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=unknown
 char text[NUM_REMOTES][32] = {0};
+struct Data remoteData[NUM_REMOTES];
 long when[NUM_REMOTES];
 int missed[NUM_REMOTES];
 
@@ -159,11 +161,26 @@ ICACHE_RAM_ATTR void intHandler() {
   // Read the data if available in buffer
   if (radio.available()) {
     int slot = 0;
+    struct Data data;
+    radio.read((byte *)&data, sizeof(data));
+    byte *bytes = (byte*)&data;
+    Serial.print("Bytes are: ");
+    for (int i = 0; i < 8; ++i) {
+      Serial.print(bytes[i], DEC); Serial.print(" ");
+    }
+    Serial.println();
     char temp[32];
-    radio.read(&temp, sizeof(temp));
+    snprintf_P(temp,
+               sizeof(temp),
+               PSTR("%c%c: %d F %d V"),
+               data.counter,
+               data.id,
+               (short)data.tempF,
+               data.voltage
+              );
     Serial.print("Data received: ");
     Serial.println(temp);
-    char code = temp[1];
+    char code = data.id;
     switch (code) {
       case 'b':
       case 'B':
@@ -195,13 +212,14 @@ ICACHE_RAM_ATTR void intHandler() {
     }
     if (when[slot] != 0) {
       // see if we missed one
-      if ((temp[0] != text[slot][0] && temp[0] != text[slot][0] + 1) || (temp[0] == 'A' && text[slot][0] != 'Z')) {
+      if ((data.counter != text[slot][0] && data.counter != text[slot][0] + 1) || (data.counter == 'A' && text[slot][0] != 'Z')) {
         missed[slot]++;
         Serial.print("Missed "); Serial.print(missed[slot]); Serial.print(" from "); Serial.println(temp[1]);
       }
     }
     char *dest = &(text[slot][0]);
     strcpy(dest, &temp[0]);
+    memcpy(&(remoteData[slot]), &data, sizeof(data));
     when[slot] = millis();
   } else {
     display.showText("Not available");
