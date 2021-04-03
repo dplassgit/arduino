@@ -9,10 +9,10 @@
 // D=Den
 // g or G=garage
 // F=Florida room
-// K=Kitchen
+// H=Here (Kitchen)
 // M=Master br
 // O=Office
-#define ID 'F'
+#define ID 'H'
 
 // Basement:
 #define VCC_FACTOR 1008000L

@@ -108,9 +108,9 @@ RF24 radio(D0, D8);  // CE, CSN
 // address through which two modules communicate.
 const byte address[6] = "flori";
 
-#define NUM_REMOTES 6
+#define NUM_REMOTES 7
 
-// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=unknown
+// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=unknown
 char text[NUM_REMOTES][32] = {0};
 long when[NUM_REMOTES];
 int missed[NUM_REMOTES];
@@ -185,8 +185,12 @@ ICACHE_RAM_ATTR void intHandler() {
       case 'F':
         slot = 4;
         break;
-      default:
+      case 'h':
+      case 'H':
         slot = 5;
+        break;
+      default:
+        slot = 6;
         break;
     }
     if (when[slot] != 0) {
@@ -210,12 +214,13 @@ void handleRoot() {
   Serial.println("Handling /");
   long now = millis();
   char buffer[200];
-  sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\nOffice: %s at %d\nFlorida: %s at %d",
+  sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\nOffice: %s at %d\nFlorida: %s at %d\nHere: %s at %d",
           text[0], (now - when[0]) / 1000,
           text[1], (now - when[1]) / 1000,
           text[2], (now - when[2]) / 1000,
           text[3], (now - when[3]) / 1000,
-          text[4], (now - when[4]) / 1000);
+          text[4], (now - when[4]) / 1000,
+          text[5], (now - when[5]) / 1000);
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -249,6 +254,9 @@ void loop() {
           break;
         case 4:
           display.showText("Florida", 0, 8);
+          break;
+        case 5:
+          display.showText("Here", 0, 8);
           break;
         default:
           display.showText("Unknown", 0, 8);
