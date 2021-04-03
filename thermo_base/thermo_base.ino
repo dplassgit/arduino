@@ -154,21 +154,16 @@ void setup() {
   for (int i = 0; i < NUM_REMOTES; ++i) {
     missed[i] = 0;
     when[i] = 0;
+
   }
 }
 
 ICACHE_RAM_ATTR void intHandler() {
   // Read the data if available in buffer
   if (radio.available()) {
-    int slot = 0;
     struct Data data;
-    radio.read((byte *)&data, sizeof(data));
-    byte *bytes = (byte*)&data;
-    Serial.print("Bytes are: ");
-    for (int i = 0; i < 8; ++i) {
-      Serial.print(bytes[i], DEC); Serial.print(" ");
-    }
-    Serial.println();
+    radio.read(&data, 8);
+
     char temp[32];
     snprintf_P(temp,
                sizeof(temp),
@@ -178,8 +173,10 @@ ICACHE_RAM_ATTR void intHandler() {
                (short)data.tempF,
                data.voltage
               );
-    Serial.print("Data received: ");
+    Serial.print("Data received equivalent to: ");
     Serial.println(temp);
+
+    int slot = 0;
     char code = data.id;
     switch (code) {
       case 'b':
@@ -219,7 +216,8 @@ ICACHE_RAM_ATTR void intHandler() {
     }
     char *dest = &(text[slot][0]);
     strcpy(dest, &temp[0]);
-    memcpy(&(remoteData[slot]), &data, sizeof(data));
+
+    memcpy(&(remoteData[slot]), &data, 8);
     when[slot] = millis();
   } else {
     display.showText("Not available");
@@ -253,33 +251,34 @@ void loop() {
     lastShown = now;
     long secondsSince = (now - when[source]) / 1000;
 
-    if (secondsSince < 99 && when[source] != 0) {
+    switch (source) {
+      case 0:
+        display.showText("BASEMENT", 0, 8);
+        break;
+      case 1:
+        display.showText("AARON's", 0, 8);
+        break;
+      case 2:
+        display.showText("GARAGE", 0, 8);
+        break;
+      case 3:
+        display.showText("OFFICE", 0, 8);
+        break;
+      case 4:
+        display.showText("FLORIDA", 0, 8);
+        break;
+      case 5:
+        display.showText("HERE", 0, 8);
+        break;
+      default:
+        display.showText("OTHER", 0, 8);
+        break;
+    }
+    if (secondsSince < 9999 && when[source] != 0) {
       display.showNum(secondsSince, 8, 8);
-      display.showText(text[source], 0, 13);
+      display.showNum1decimal(remoteData[source].tempF, 8, 3);
+      display.showText("F", 11, 1);
     } else {
-      switch (source) {
-        case 0:
-          display.showText("Basement", 0, 8);
-          break;
-        case 1:
-          display.showText("Aaron's", 0, 8);
-          break;
-        case 2:
-          display.showText("Garage", 0, 8);
-          break;
-        case 3:
-          display.showText("Office", 0, 8);
-          break;
-        case 4:
-          display.showText("Florida", 0, 8);
-          break;
-        case 5:
-          display.showText("Here", 0, 8);
-          break;
-        default:
-          display.showText("Unknown", 0, 8);
-          break;
-      }
       display.showText("NO DATA", 8, 8);
     }
 

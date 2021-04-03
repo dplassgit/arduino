@@ -13,12 +13,12 @@
 // H=Here (Kitchen)
 // M=Master br
 // O=Office
-#define ID 'G'
+#define ID 'H'
 
 // Basement:
-// #define VCC_FACTOR 1008000L
+#define VCC_FACTOR 1008000L
 // Garage:
-#define VCC_FACTOR 1005000L
+// #define VCC_FACTOR 1005000L
 // Aaron:
 // #define VCC_FACTOR 1020000L
 
@@ -108,15 +108,9 @@ void loop() {
              data.voltage
             );
   Serial.print("Trying to send equivalent of: "); Serial.println(text);
-  byte *bytes = (byte*)&data;
-  Serial.print("Bytes are: ");
-  for (int i = 0; i < 8; ++i) {
-    Serial.print(bytes[i], DEC); Serial.print(" ");
-  }
-  Serial.println();
 
   int tries = 0;
-  for (; tries < MAX_TRIES && !radio.write((byte *)&data, sizeof(data)); ++tries ) {
+  for (; tries < MAX_TRIES && !radio.write(&data, sizeof(data)); ++tries ) {
     Serial.println("Not connected...");
     delay((tries + 1) * 300);
   }
