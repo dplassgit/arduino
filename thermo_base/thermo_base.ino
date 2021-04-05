@@ -1,5 +1,4 @@
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266mDNS.h>
 
@@ -112,10 +111,7 @@ const byte address[6] = "flori";
 #define NUM_REMOTES 7
 
 // 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=unknown
-char text[NUM_REMOTES][32] = {0};
-struct Data remoteData[NUM_REMOTES];
-long when[NUM_REMOTES];
-int missed[NUM_REMOTES];
+struct RemoteMetaData metadata[NUM_REMOTES];
 
 void setup() {
   Serial.begin(115200);
@@ -152,9 +148,10 @@ void setup() {
   server.on("/", handleRoot);
   server.begin();
   for (int i = 0; i < NUM_REMOTES; ++i) {
-    missed[i] = 0;
-    when[i] = 0;
-
+    metadata[i].missed = 0;
+    metadata[i].when = 0;
+    metadata[i].maxTemp = -100;
+    metadata[i].minTemp = 212;
   }
 }
 
@@ -162,19 +159,7 @@ ICACHE_RAM_ATTR void intHandler() {
   // Read the data if available in buffer
   if (radio.available()) {
     struct Data data;
-    radio.read(&data, 8);
-
-    char temp[32];
-    snprintf_P(temp,
-               sizeof(temp),
-               PSTR("%c%c: %d F %d V"),
-               data.counter,
-               data.id,
-               (short)data.tempF,
-               data.voltage
-              );
-    Serial.print("Data received equivalent to: ");
-    Serial.println(temp);
+    radio.read(&data, sizeof(struct Data));
 
     int slot = 0;
     char code = data.id;
@@ -207,18 +192,31 @@ ICACHE_RAM_ATTR void intHandler() {
         slot = 6;
         break;
     }
-    if (when[slot] != 0) {
+    snprintf_P(metadata[slot].summary,
+               sizeof(metadata[slot].summary),
+               PSTR("%c%c: %d F %d V"),
+               data.counter,
+               data.id,
+               (short)data.tempF,
+               data.voltage);
+    Serial.print("Data received equivalent to: ");
+    Serial.println(metadata[slot].summary);
+
+    if (metadata[slot].when != 0) {
       // see if we missed one
-      if ((data.counter != text[slot][0] && data.counter != text[slot][0] + 1) || (data.counter == 'A' && text[slot][0] != 'Z')) {
-        missed[slot]++;
-        Serial.print("Missed "); Serial.print(missed[slot]); Serial.print(" from "); Serial.println(temp[1]);
+      if (!(data.counter == 'A' && metadata[slot].data.counter == 'Z')) {
+        if (data.counter != metadata[slot].data.counter + 1) {
+          metadata[slot].missed++;
+          Serial.print("Missed "); Serial.print(metadata[slot].missed); Serial.print(" from "); Serial.println(data.id);
+        }
       }
     }
-    char *dest = &(text[slot][0]);
-    strcpy(dest, &temp[0]);
-
-    memcpy(&(remoteData[slot]), &data, 8);
-    when[slot] = millis();
+    memcpy(&(metadata[slot].data), &data, sizeof(struct Data));
+    metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
+    metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
+    Serial.print("Max: "); Serial.println(metadata[slot].maxTemp);
+    Serial.print("Min: "); Serial.println(metadata[slot].minTemp);
+    metadata[slot].when = millis();
   } else {
     display.showText("Not available");
     Serial.println("Not available");
@@ -229,14 +227,15 @@ ICACHE_RAM_ATTR void intHandler() {
 void handleRoot() {
   Serial.println("Handling /");
   long now = millis();
-  char buffer[200];
-  sprintf(buffer, "Basement: %s at %d\nAaron: %s at %d\nGarage: %s at %d\nOffice: %s at %d\nFlorida: %s at %d\nHere: %s at %d",
-          text[0], (now - when[0]) / 1000,
-          text[1], (now - when[1]) / 1000,
-          text[2], (now - when[2]) / 1000,
-          text[3], (now - when[3]) / 1000,
-          text[4], (now - when[4]) / 1000,
-          text[5], (now - when[5]) / 1000);
+  char buffer[500];
+  sprintf(buffer,
+      "Basement: %s at %d. Min %d Max %d\nAaron: %s at %d. Min %d Max %d\nGarage: %s at %d. Min %d Max %d\nOffice: %s at %d. Min %d Max %d\nFlorida: %s at %d. Min %d Max %d\nHere: %s at %d. Min %d Max %d",
+      metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
+      metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
+      metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
+      metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
+      metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
+      metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp);
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -249,7 +248,7 @@ void loop() {
   if (lastShown == 0 || now - lastShown > 4000) {
     // yes this fails for rollover
     lastShown = now;
-    long secondsSince = (now - when[source]) / 1000;
+    long secondsSince = (now - metadata[source].when) / 1000;
 
     switch (source) {
       case 0:
@@ -274,9 +273,9 @@ void loop() {
         display.showText("OTHER", 0, 8);
         break;
     }
-    if (secondsSince < 9999 && when[source] != 0) {
+    if (secondsSince < 9999 && metadata[source].when != 0) {
       display.showNum(secondsSince, 8, 8);
-      display.showNum1decimal(remoteData[source].tempF, 8, 3);
+      display.showNum1decimal(metadata[source].data.tempF, 8, 3);
       display.showText("F", 11, 1);
     } else {
       display.showText("NO DATA", 8, 8);

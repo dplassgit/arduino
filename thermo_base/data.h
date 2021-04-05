@@ -5,3 +5,12 @@ struct Data {
   short voltage;  // mV
   float tempF;
 };
+
+struct RemoteMetaData {
+  struct Data data;
+  float minTemp;
+  float maxTemp;
+  long when;
+  short missed;
+  char summary[32];
+};
