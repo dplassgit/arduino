@@ -20,7 +20,7 @@ int deviceCount;
 
 SoftwareSerial mySerial(4, 5); // RX, TX
 
-RF24 radio(9, 8);  // CE, CSN
+RF24 radio(A0, 8);  // CE (disconnected), CSN
 
 #define NRF_INT_PIN 3
 
@@ -32,12 +32,12 @@ struct Data data;
 
 void setup() {
   data.id = 'H';
-  
+
   Serial.begin(9600);
   Serial.println("Hello nrf_receiver");
 
   mySerial.begin(BAUD_RATE);
-  
+
   radio.begin();
   // set the address etc
   radio.setChannel(0x66);
@@ -59,7 +59,7 @@ void setup() {
 void intHandler() {
   if (radio.available()) {
     struct Data remoteData;
-    radio.read(&remoteData, sizeof(remoteData));
+    radio.read(&remoteData, DATA_SIZE);
     char temp[32];
     snprintf_P(temp,
                sizeof(temp),
@@ -70,8 +70,10 @@ void intHandler() {
                remoteData.voltage);
     Serial.print("Data received equivalent to: ");
     Serial.println(temp);
-    Serial.println("Forwarding");
-    mySerial.write((byte*) &remoteData, sizeof(remoteData));
+    int sent = mySerial.write((byte*) &remoteData,DATA_SIZE);
+    if (sent != DATA_SIZE) {
+      Serial.println("Forwarding FAILED");
+    }
   } else {
     Serial.println("Not available");
   }
@@ -112,7 +114,10 @@ void loop() {
              data.voltage
             );
   Serial.print("Trying to send equivalent of: "); Serial.println(text);
-  mySerial.write((byte*) &data, sizeof(data));
+  int sent = mySerial.write((byte*) &data, DATA_SIZE);
+  if (sent != DATA_SIZE) {
+    Serial.println("Sending failed");
+  }
   counter++;
   if (counter == 26) counter = 0;
 

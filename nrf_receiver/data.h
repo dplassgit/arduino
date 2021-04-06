@@ -6,3 +6,5 @@ struct Data {
   short voltage;  // mV
   float tempF;
 };
+
+#define DATA_SIZE 8
