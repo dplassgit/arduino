@@ -49,7 +49,7 @@ void intHandler() {
   if (rxread) {
     if (radio.available()) {
       struct Data remoteData;
-      radio.read(&remoteData, DATA_SIZE);
+      radio.read(&remoteData, RX_DATA_SIZE);
       char temp[32];
       snprintf_P(temp,
                  sizeof(temp),
@@ -60,14 +60,25 @@ void intHandler() {
                  remoteData.voltage);
       Serial.print("Data received ~: ");
       Serial.println(temp);
-      int sent = mySerial.write((byte*) &remoteData, DATA_SIZE);
-      if (sent != DATA_SIZE) {
+      setChecksum(&remoteData);
+      int sent = mySerial.write((byte*) &remoteData, TX_DATA_SIZE);
+      if (sent != TX_DATA_SIZE) {
         Serial.println("Forwarding FAILED");
       }
       return;
     }
   }
   Serial.println("Not available");
+}
+
+void setChecksum(struct Data *remoteData) {
+  short checksum = 0;
+  byte *raw = (byte *)remoteData;
+  for (int i = 0; i < RX_DATA_SIZE; ++i) {
+    checksum += raw[i] * 3 * (i + 1);
+  }
+  Serial.print("Setting checksum to: "); Serial.println(checksum);
+  remoteData->checksum = checksum;
 }
 
 int counter = 0;
@@ -97,8 +108,9 @@ void loop() {
              data.voltage
             );
   Serial.print("Trying to send ~: "); Serial.println(text);
-  int sent = mySerial.write((byte*) &data, DATA_SIZE);
-  if (sent != DATA_SIZE) {
+  setChecksum(&data);
+  int sent = mySerial.write((byte*) &data, TX_DATA_SIZE);
+  if (sent != TX_DATA_SIZE) {
     Serial.println("Sending failed");
   }
   counter++;

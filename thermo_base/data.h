@@ -4,8 +4,10 @@ struct Data {
   char id;      // See ID, above
   short voltage;  // mV
   float tempF;
+  short checksum;
 };
-#define DATA_STRUCT_SIZE 8
+
+#define RX_DATA_SIZE 10
 
 struct RemoteMetaData {
   struct Data data;

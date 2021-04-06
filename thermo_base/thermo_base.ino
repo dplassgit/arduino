@@ -142,11 +142,28 @@ void setup() {
 }
 
 void serialHandler() {
-  if (mySerial.available() >= DATA_STRUCT_SIZE) {
+  if (mySerial.available() >= RX_DATA_SIZE) {
     struct Data data;
     byte *rawData = (byte*)&data;
-    for (int i = 0; i < DATA_STRUCT_SIZE; ++i) {
+    for (int i = 0; i < RX_DATA_SIZE; ++i) {
       rawData[i] = mySerial.read();
+    }
+    // Validate the checksum
+    short calcChecksum = getChecksum(&data);
+    if (data.checksum != calcChecksum) {
+      Serial.print("CHECKSUM MISMATCH; got "); Serial.print(data.checksum);
+      Serial.print(" but calculated as "); Serial.println(calcChecksum);
+      char tmp[32];
+      snprintf_P(tmp,
+                 sizeof(tmp),
+                 PSTR("%c%c: %d F %d V (%d)"),
+                 data.counter,
+                 data.id,
+                 (short)data.tempF,
+                 data.voltage,
+                 data.checksum);
+      Serial.print("Data was ~:"); Serial.println(tmp);
+      return;
     }
 
     int slot = 0;
@@ -206,6 +223,16 @@ void serialHandler() {
     Serial.print(" Min: "); Serial.println(metadata[slot].minTemp);
     metadata[slot].when = millis();
   }
+}
+
+short getChecksum(struct Data *remoteData) {
+  short checksum = 0;
+  byte *raw = (byte *)remoteData;
+  // Skip the actual checksum bytes
+  for (int i = 0; i < RX_DATA_SIZE - 2; ++i) {
+    checksum += raw[i] * 3 * (i + 1);
+  }
+  return checksum;
 }
 
 void handleRoot() {

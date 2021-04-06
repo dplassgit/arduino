@@ -5,6 +5,8 @@ struct Data {
   char id;      // One-letter ID of this sender. Second slot for historical reasons.
   short voltage;  // mV
   float tempF;
+  short checksum;
 };
 
-#define DATA_SIZE 8
+#define RX_DATA_SIZE 8
+#define TX_DATA_SIZE 10
