@@ -65,6 +65,8 @@ void intHandler() {
       if (sent != TX_DATA_SIZE) {
         Serial.println("Forwarding FAILED");
       }
+      // In case there was an issue with the base, this gives it a chance to recover
+      delay(500);
       return;
     }
   }

@@ -163,6 +163,10 @@ void serialHandler() {
                  data.voltage,
                  data.checksum);
       Serial.print("Data was ~:"); Serial.println(tmp);
+      // Flush the input
+      while (mySerial.available() > 0) {
+        mySerial.read();
+      }
       return;
     }
 
@@ -225,7 +229,7 @@ void serialHandler() {
   }
 }
 
-short getChecksum(struct Data *remoteData) {
+short getChecksum(struct Data * remoteData) {
   short checksum = 0;
   byte *raw = (byte *)remoteData;
   // Skip the actual checksum bytes
@@ -240,7 +244,7 @@ void handleRoot() {
   long now = millis();
   char buffer[500];
   sprintf(buffer,
-          "Basement: %s at %d. Min %d Max %d\nAaron: %s at %d. Min %d Max %d\nGarage: %s at %d. Min %d Max %d\nOffice: %s at %d. Min %d Max %d\nFlorida: %s at %d. Min %d Max %d\nHere: %s at %d. Min %d Max %d",
+          "Basement: %s at %d. Min %d Max %d\n   Aaron: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d",
           metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
           metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
           metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
