@@ -143,14 +143,11 @@ void setup() {
 
 void serialHandler() {
   if (mySerial.available() >= DATA_STRUCT_SIZE) {
-    Serial.println("Received bytes:");
     struct Data data;
     byte *rawData = (byte*)&data;
     for (int i = 0; i < DATA_STRUCT_SIZE; ++i) {
       rawData[i] = mySerial.read();
-      Serial.print(rawData[i], DEC); Serial.print(" ");
     }
-    Serial.println();
 
     int slot = 0;
     char code = data.id;
@@ -190,8 +187,8 @@ void serialHandler() {
                data.id,
                (short)data.tempF,
                data.voltage);
-    Serial.print("Data received equivalent to: ");
-    Serial.println(metadata[slot].summary);
+    Serial.print("Data received ~: ");
+    Serial.print(metadata[slot].summary);
 
     if (metadata[slot].when != 0) {
       // see if we missed one
@@ -205,8 +202,8 @@ void serialHandler() {
     memcpy(&(metadata[slot].data), &data, sizeof(struct Data));
     metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
     metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
-    Serial.print("Max: "); Serial.println(metadata[slot].maxTemp);
-    Serial.print("Min: "); Serial.println(metadata[slot].minTemp);
+    Serial.print(". Max: "); Serial.print(metadata[slot].maxTemp);
+    Serial.print(" Min: "); Serial.println(metadata[slot].minTemp);
     metadata[slot].when = millis();
   }
 }

@@ -5,7 +5,7 @@ struct Data {
   short voltage;  // mV
   float tempF;
 };
-#define DATA_STRUCT_SIZE sizeof(struct Data)
+#define DATA_STRUCT_SIZE 8
 
 struct RemoteMetaData {
   struct Data data;
