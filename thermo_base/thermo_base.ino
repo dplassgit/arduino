@@ -1,8 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServerSecure.h>
 #include <ESP8266mDNS.h>
-
-#include <RF24.h>
+#include <SoftwareSerial.h>
 
 #define min(a,b) ((a<b)?a:b)
 #define max(a,b) ((a>b)?a:b)
@@ -98,15 +97,9 @@ const byte intPin = D4;
 
 LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 
-// Create an RF24 object
-/* Uno:
-  RF24 radio(9, 8);  // CE, CSN
-*/
-// ESP8266
-RF24 radio(D0, D8);  // CE, CSN
-
-// address through which two modules communicate.
-const byte address[6] = "flori";
+#define BAUD_RATE 57600
+#define SERIAL_RX_PIN D7
+SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
 #define NUM_REMOTES 7
 
@@ -117,9 +110,17 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Hello thermo base");
 
+  for (int i = 0; i < NUM_REMOTES; ++i) {
+    metadata[i].missed = 0;
+    metadata[i].when = 0;
+    metadata[i].maxTemp = -100;
+    metadata[i].minTemp = 212;
+  }
+
   display.begin();
   display.setBrightness(1);
   display.showText("Connecting");
+
   int dot = 0;
   WiFi.begin(ssid, password);
   // Wait for connection
@@ -127,39 +128,29 @@ void setup() {
     delay(500);
     display.showText(".", dot++, 1);
   }
+  // Allows us to find this at https://base.local
   MDNS.begin("base");
 
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  radio.begin();
-  radio.setChannel(0x66);
-  radio.setPALevel(RF24_PA_MAX);
-
-  // set the address
-  radio.openReadingPipe(1, address);
-
-  //Set module as receiver
-  radio.startListening();
-
-  attachInterrupt(digitalPinToInterrupt(intPin), intHandler, FALLING);
+  mySerial.begin(BAUD_RATE);
 
   server.getServer().setServerKeyAndCert_P(rsakey, sizeof(rsakey), x509, sizeof(x509));
   server.on("/", handleRoot);
   server.begin();
-  for (int i = 0; i < NUM_REMOTES; ++i) {
-    metadata[i].missed = 0;
-    metadata[i].when = 0;
-    metadata[i].maxTemp = -100;
-    metadata[i].minTemp = 212;
-  }
 }
 
-ICACHE_RAM_ATTR void intHandler() {
-  // Read the data if available in buffer
-  if (radio.available()) {
+void serialHandler() {
+  if (mySerial.available() >= DATA_STRUCT_SIZE) {
+    Serial.println("Received bytes:");
     struct Data data;
-    radio.read(&data, sizeof(struct Data));
+    byte *rawData = (byte*)&data;
+    for (int i = 0; i < DATA_STRUCT_SIZE; ++i) {
+      rawData[i] = mySerial.read();
+      Serial.print(rawData[i], DEC); Serial.print(" ");
+    }
+    Serial.println();
 
     int slot = 0;
     char code = data.id;
@@ -217,25 +208,21 @@ ICACHE_RAM_ATTR void intHandler() {
     Serial.print("Max: "); Serial.println(metadata[slot].maxTemp);
     Serial.print("Min: "); Serial.println(metadata[slot].minTemp);
     metadata[slot].when = millis();
-  } else {
-    display.showText("Not available");
-    Serial.println("Not available");
   }
 }
-
 
 void handleRoot() {
   Serial.println("Handling /");
   long now = millis();
   char buffer[500];
   sprintf(buffer,
-      "Basement: %s at %d. Min %d Max %d\nAaron: %s at %d. Min %d Max %d\nGarage: %s at %d. Min %d Max %d\nOffice: %s at %d. Min %d Max %d\nFlorida: %s at %d. Min %d Max %d\nHere: %s at %d. Min %d Max %d",
-      metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
-      metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
-      metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
-      metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
-      metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
-      metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp);
+          "Basement: %s at %d. Min %d Max %d\nAaron: %s at %d. Min %d Max %d\nGarage: %s at %d. Min %d Max %d\nOffice: %s at %d. Min %d Max %d\nFlorida: %s at %d. Min %d Max %d\nHere: %s at %d. Min %d Max %d",
+          metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
+          metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
+          metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
+          metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
+          metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
+          metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp);
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -244,6 +231,10 @@ int source = 0;
 long lastShown = 0;
 
 void loop() {
+  serialHandler();
+
+  server.handleClient();
+
   long now = millis();
   if (lastShown == 0 || now - lastShown > 4000) {
     // yes this fails for rollover
@@ -286,6 +277,4 @@ void loop() {
 
     MDNS.update();
   }
-
-  server.handleClient();
 }
