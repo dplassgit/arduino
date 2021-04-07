@@ -82,7 +82,7 @@ static const uint8_t rsakey[] PROGMEM = {
   0xd5, 0xdf, 0x34, 0xeb, 0x26, 0x03
 };
 
-#define NUM_DIGITS 16
+#define NUM_DIGITS 24
 /* For Uno:
   const byte dataPin = A0;
   const byte clockPin = A1;
@@ -93,7 +93,6 @@ static const uint8_t rsakey[] PROGMEM = {
 const byte dataPin = D1;
 const byte clockPin = D2;
 const byte loadPin = D3;
-const byte intPin = D4;
 
 LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 
@@ -101,9 +100,9 @@ LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 #define SERIAL_RX_PIN D7
 SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
-#define NUM_REMOTES 7
+#define NUM_REMOTES 8
 
-// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=unknown
+// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=master, 7=unknown
 struct RemoteMetaData metadata[NUM_REMOTES];
 
 void setup() {
@@ -197,8 +196,12 @@ void serialHandler() {
       case 'H':
         slot = 5;
         break;
-      default:
+      case 'm':
+      case 'M':
         slot = 6;
+        break;
+      default:
+        slot = 7;
         break;
     }
     snprintf_P(metadata[slot].summary,
@@ -244,13 +247,15 @@ void handleRoot() {
   long now = millis();
   char buffer[500];
   sprintf(buffer,
-          "Basement: %s at %d. Min %d Max %d\n   Aaron: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d",
+          "Basement: %s at %d. Min %d Max %d\n   Aaron: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d\n  Master: %s at %d. Min %d Max %d",
           metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
           metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
           metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
           metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
           metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
-          metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp);
+          metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp,
+          metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp
+         );
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -268,7 +273,6 @@ void loop() {
     // yes this fails for rollover
     lastShown = now;
     long secondsSince = (now - metadata[source].when) / 1000;
-
     switch (source) {
       case 0:
         display.showText("BASEMENT", 0, 8);
@@ -288,6 +292,9 @@ void loop() {
       case 5:
         display.showText("HERE", 0, 8);
         break;
+      case 6:
+        display.showText("OUR BR", 0, 8);
+        break;
       default:
         display.showText("OTHER", 0, 8);
         break;
@@ -296,8 +303,13 @@ void loop() {
       display.showNum(secondsSince, 8, 8);
       display.showNum1decimal(metadata[source].data.tempF, 8, 3);
       display.showText("F", 11, 1);
+      char third[12];
+      sprintf(third, "HI%dLO%d",
+              (int)(metadata[source].maxTemp + .5),
+              (int)(metadata[source].minTemp + .5));
+      display.showText(third, 16, 8);
     } else {
-      display.showText("NO DATA", 8, 8);
+      display.showText("NO DATA", 8, 16);
     }
 
     source++;

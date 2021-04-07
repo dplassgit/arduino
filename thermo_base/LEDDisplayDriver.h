@@ -46,7 +46,7 @@
 //#define _USE_TIMER4_   // Supported on Mega2560 & Mega32U4
 //#define _USE_TIMER5_   // Supported on Mega2560
 
-#define MAX_DIGITS 16    // Used to reserve frame buffer
+#define MAX_DIGITS 24    // Used to reserve frame buffer
 
 // Limits how fast the pins change state
 // Using 10 gives slow and stable signals, 1 is the fastest with any delay and 0 is crazy fast when _FAST_CLOCK_ is enabled
