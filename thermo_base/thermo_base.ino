@@ -150,6 +150,7 @@ void serialHandler() {
     // Validate the checksum
     short calcChecksum = getChecksum(&data);
     if (data.checksum != calcChecksum) {
+      display.showText("CHECKSUM ERROR");
       Serial.print("CHECKSUM MISMATCH; got "); Serial.print(data.checksum);
       Serial.print(" but calculated as "); Serial.println(calcChecksum);
       char tmp[32];
@@ -163,9 +164,11 @@ void serialHandler() {
                  data.checksum);
       Serial.print("Data was ~:"); Serial.println(tmp);
       // Flush the input
+      Serial.print("Flushing: skipping: ");
       while (mySerial.available() > 0) {
-        mySerial.read();
+        Serial.print(mySerial.read());
       }
+      Serial.println();
       return;
     }
 
@@ -275,28 +278,28 @@ void loop() {
     long secondsSince = (now - metadata[source].when) / 1000;
     switch (source) {
       case 0:
-        display.showText("BASEMENT", 0, 8);
+        display.showText("Basement", 0, 8);
         break;
       case 1:
-        display.showText("AARON's", 0, 8);
+        display.showText("Aaron's", 0, 8);
         break;
       case 2:
-        display.showText("GARAGE", 0, 8);
+        display.showText("Garage", 0, 8);
         break;
       case 3:
-        display.showText("OFFICE", 0, 8);
+        display.showText("Office", 0, 8);
         break;
       case 4:
-        display.showText("FLORIDA", 0, 8);
+        display.showText("Florida", 0, 8);
         break;
       case 5:
-        display.showText("HERE", 0, 8);
+        display.showText("Here", 0, 8);
         break;
       case 6:
-        display.showText("OUR BR", 0, 8);
+        display.showText("Our br", 0, 8);
         break;
       default:
-        display.showText("OTHER", 0, 8);
+        display.showText("Other", 0, 8);
         break;
     }
     if (secondsSince < 9999 && metadata[source].when != 0) {
@@ -304,12 +307,12 @@ void loop() {
       display.showNum1decimal(metadata[source].data.tempF, 8, 3);
       display.showText("F", 11, 1);
       char third[12];
-      sprintf(third, "HI%dLO%d",
-              (int)(metadata[source].maxTemp + .5),
-              (int)(metadata[source].minTemp + .5));
+      sprintf(third, "Lo%dHi%d",
+              (int)(metadata[source].minTemp + .5),
+              (int)(metadata[source].maxTemp + .5));
       display.showText(third, 16, 8);
     } else {
-      display.showText("NO DATA", 8, 16);
+      display.showText("No data", 8, 16);
     }
 
     source++;
