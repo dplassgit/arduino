@@ -91,8 +91,8 @@ static const uint8_t rsakey[] PROGMEM = {
 */
 /* For ESP8266MOD */
 const byte dataPin = D1;
-const byte clockPin = D2;
-const byte loadPin = D3;
+const byte loadPin = D2;
+const byte clockPin = D3;
 
 LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 
@@ -100,9 +100,9 @@ LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 #define SERIAL_RX_PIN D7
 SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
-#define NUM_REMOTES 8
+#define NUM_REMOTES 7
 
-// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=master, 7=unknown
+// 0=basement, 1=aaron, 2=garage, 3=Office, 4=Florida, 5=here, 6=master
 struct RemoteMetaData metadata[NUM_REMOTES];
 
 void setup() {
@@ -166,7 +166,7 @@ void serialHandler() {
       // Flush the input
       Serial.print("Flushing: skipping: ");
       while (mySerial.available() > 0) {
-        Serial.print(mySerial.read());
+        Serial.print(mySerial.read(), HEX); Serial.print(" ");
       }
       Serial.println();
       return;
@@ -204,8 +204,17 @@ void serialHandler() {
         slot = 6;
         break;
       default:
-        slot = 7;
-        break;
+        char temp[32];
+        snprintf_P(temp,
+                   sizeof(temp),
+                   PSTR("%c%c: %d F %d V"),
+                   data.counter,
+                   data.id,
+                   (short)data.tempF,
+                   data.voltage);
+        Serial.print("UNKNOWN SOURCE; Received ~: ");
+        Serial.println(temp);
+        return;
     }
     snprintf_P(metadata[slot].summary,
                sizeof(metadata[slot].summary),
@@ -214,24 +223,29 @@ void serialHandler() {
                data.id,
                (short)data.tempF,
                data.voltage);
-    Serial.print("Data received ~: ");
+    Serial.print("Received ~: ");
     Serial.print(metadata[slot].summary);
 
+    metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
+    metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
+    Serial.print(". Min: "); Serial.print(metadata[slot].minTemp);
+    Serial.print(", Max: "); Serial.print(metadata[slot].maxTemp);
+    Serial.println();
     if (metadata[slot].when != 0) {
-      // see if we missed one
+      // See if we missed one
       if (!(data.counter == 'A' && metadata[slot].data.counter == 'Z')) {
-        if (data.counter != metadata[slot].data.counter + 1) {
-          metadata[slot].missed++;
-          Serial.print("Missed "); Serial.print(metadata[slot].missed); Serial.print(" from "); Serial.println(data.id);
+        // Not wraparound
+        if (data.counter != metadata[slot].data.counter) {
+          // Not a dupe
+          if (data.counter != metadata[slot].data.counter + 1) {
+            metadata[slot].missed++;
+            Serial.print("Missed "); Serial.print(metadata[slot].missed); Serial.print(" from "); Serial.println(data.id);
+          }
         }
       }
     }
-    memcpy(&(metadata[slot].data), &data, sizeof(struct Data));
-    metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
-    metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
-    Serial.print(". Max: "); Serial.print(metadata[slot].maxTemp);
-    Serial.print(" Min: "); Serial.println(metadata[slot].minTemp);
     metadata[slot].when = millis();
+    memcpy(&(metadata[slot].data), &data, sizeof(struct Data));
   }
 }
 
@@ -297,9 +311,6 @@ void loop() {
         break;
       case 6:
         display.showText("Our br", 0, 8);
-        break;
-      default:
-        display.showText("Other", 0, 8);
         break;
     }
     if (secondsSince < 9999 && metadata[source].when != 0) {
