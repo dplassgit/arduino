@@ -226,6 +226,11 @@ void serialHandler() {
     Serial.print("Received ~: ");
     Serial.print(metadata[slot].summary);
 
+    if (data.tempF < -10 || data.tempF > 110) {
+      display.showTextScroll("Skipping weird/invalid data");
+      Serial.println("Skipping weird/invalid data");
+      return;
+    }
     metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
     metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
     Serial.print(". Min: "); Serial.print(metadata[slot].minTemp);

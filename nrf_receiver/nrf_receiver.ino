@@ -60,6 +60,10 @@ void intHandler() {
                  remoteData.voltage);
       Serial.print("Data received ~: ");
       Serial.println(temp);
+      if (remoteData.tempF < -10 || remoteData.tempf > 100) {
+        Serial.println("Skipping weird/invalid data");
+        return;
+      }
       setChecksum(&remoteData);
       int sent = mySerial.write((byte*) &remoteData, TX_DATA_SIZE);
       if (sent != TX_DATA_SIZE) {
