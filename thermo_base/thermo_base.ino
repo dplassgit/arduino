@@ -36,12 +36,11 @@ LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 #define SERIAL_RX_PIN D7
 SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
-#define NUM_REMOTES 7
+#define NUM_REMOTES 8
 
-// 0=aaron, 1=basement, 2=Florida, 3=garage, 4=here, 5=Office, 6=master
-static const char* CODES PROGMEM = "ABFGHOM";
-static const char* NAMES[] PROGMEM = {"Aaron's", "Basement", "Florida", "Garage", "Here", "Office", "Our Br"};
-static const float ADJUSTMENT[] = {-1.92, -1.84, -1.84, -1.64, -5.4, -1, -3.32};
+static const char* NAMES[] PROGMEM = {"Aaron's", "Basement", "Den", "Florida", "Garage", "Here", "Office", "Our Br"};
+static const char* CODES PROGMEM = "ABDFGHOM";
+static const float ADJUSTMENT[] = {-1.92, -1.84, -2, -1.84, -1.64, -5.4, -1, -3.32};
 struct RemoteMetaData metadata[NUM_REMOTES];
 
 // Port 80. Nyeah.
@@ -70,7 +69,7 @@ void setup() {
     delay(500);
     display.showText(".", dot++, 1);
   }
-  // Allows us to find this at https://base.local
+  // Allows us to find this at http://base.local
   MDNS.begin("base");
 
   Serial.print("IP address: ");
@@ -135,6 +134,7 @@ void serialHandler() {
       Serial.println(temp);
       return;
     }
+    data.tempF += ADJUSTMENT[slot];
     snprintf_P(metadata[slot].summary,
                sizeof(metadata[slot].summary),
                PSTR("%c%c: %d F %d V"),
@@ -150,7 +150,6 @@ void serialHandler() {
       Serial.println("Skipping weird/invalid data");
       return;
     }
-    data.tempF += ADJUSTMENT[slot];
     metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
     metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
     Serial.print(". Min: "); Serial.print(metadata[slot].minTemp);
@@ -189,14 +188,15 @@ void handleRoot() {
   long now = millis(); 
   char buffer[500];
   sprintf(buffer,
-          "   Aaron: %s at %d. Min %d Max %d\nBasement: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n  Our Br: %s at %d. Min %d Max %d",
+          "   Aaron: %s at %d. Min %d Max %d\nBasement: %s at %d. Min %d Max %d\n     Den: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n  Our Br: %s at %d. Min %d Max %d",
           metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
           metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
           metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
           metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
           metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
           metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp,
-          metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp
+          metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp,
+          metadata[7].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp
          );
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
