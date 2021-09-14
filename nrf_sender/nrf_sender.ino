@@ -13,14 +13,11 @@
 // H=Here (Kitchen)
 // M=Master br
 // O=Office
-#define ID 'H'
+// D=Den
+#define ID 'D' 
 
-// Basement:
+// Default/average:
 #define VCC_FACTOR 1008000L
-// Garage:
-// #define VCC_FACTOR 1005000L
-// Aaron:
-// #define VCC_FACTOR 1020000L
 
 #define MAX_TRIES 4
 

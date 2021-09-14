@@ -22,8 +22,8 @@ const byte address[6] = "flori";
 struct Data data;
 
 void setup() {
-  data.id = 'H';
-
+  data.id = 'H'; // "Here" (kitchen)
+  data.voltage = 4000;
   Serial.begin(9600);
   Serial.println("Hello nrf_receiver");
 
@@ -60,7 +60,7 @@ void intHandler() {
                  remoteData.voltage);
       Serial.print("Data received ~: ");
       Serial.println(temp);
-      if (remoteData.tempF < -10 || remoteData.tempf > 100) {
+      if (remoteData.tempF < -10 || remoteData.tempF > 100) {
         Serial.println("Skipping weird/invalid data");
         return;
       }
