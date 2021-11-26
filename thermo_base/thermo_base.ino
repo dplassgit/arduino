@@ -38,7 +38,7 @@ SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
 #define NUM_REMOTES 8
 
-static const char* NAMES[] PROGMEM = {"Aaron's", "Basement", "Den", "Florida", "Garage", "Here", "Office", "Our Br"};
+static const char* NAMES[] PROGMEM =    {"Aaron's", "Basement", "Den", "Florida", "Garage", "Here", "Office", "Our Br"};
 static const char* CODES PROGMEM = "ABDFGHOM";
 static const float ADJUSTMENT[] = {-1.92, -1.84, -2, -1.84, -1.64, -5.4, -1, -3.32};
 struct RemoteMetaData metadata[NUM_REMOTES];
@@ -196,7 +196,7 @@ void handleRoot() {
           metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
           metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp,
           metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp,
-          metadata[7].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp
+          metadata[7].summary, (now - metadata[7].when) / 1000, (int)metadata[7].minTemp, (int)metadata[7].maxTemp
          );
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
