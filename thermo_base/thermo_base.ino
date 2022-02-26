@@ -1,10 +1,11 @@
+/** FOR UPLOADING: Use NodeMCU 1.0 (ESP-12E Module) */
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <SoftwareSerial.h>
 
-#define min(a,b) ((a<b)?a:b)
-#define max(a,b) ((a>b)?a:b)
+#define min(a,b) ((a<b)?(a):(b))
+#define max(a,b) ((a>b)?(a):(b))
 
 #include "LEDDisplayDriver.h"
 #include "config.h"
@@ -40,7 +41,7 @@ SoftwareSerial mySerial(SERIAL_RX_PIN, D8); // RX, TX
 
 static const char* NAMES[] PROGMEM =    {"Aaron's", "Basement", "Den", "Florida", "Garage", "Here", "Office", "Our Br"};
 static const char* CODES PROGMEM = "ABDFGHOM";
-static const float ADJUSTMENT[] = {-1.92, -1.84, -2, -1.84, -1.64, -5.4, -1, -3.32};
+static const float ADJUSTMENT[] = { -1.92, -1.84, -2, -1.84, -1.64, -5.4, -1, -3.32};
 struct RemoteMetaData metadata[NUM_REMOTES];
 
 // Port 80. Nyeah.
@@ -97,11 +98,10 @@ void serialHandler() {
       char tmp[32];
       snprintf_P(tmp,
                  sizeof(tmp),
-                 PSTR("%c%c: %d F %d V (%d)"),
+                 PSTR("%c%c: %d F (%d)"),
                  data.counter,
                  data.id,
                  (short)data.tempF,
-                 data.voltage,
                  data.checksum);
       Serial.print("Data was ~:"); Serial.println(tmp);
       // Flush the input
@@ -125,31 +125,29 @@ void serialHandler() {
       char temp[32];
       snprintf_P(temp,
                  sizeof(temp),
-                 PSTR("%c%c: %d F %d V"),
+                 PSTR("%c%c: %d F"),
                  data.counter,
                  data.id,
-                 (short)data.tempF,
-                 data.voltage);
+                 (short)data.tempF);
       Serial.print("UNKNOWN SOURCE; Received ~: ");
       Serial.println(temp);
       return;
     }
-    data.tempF += ADJUSTMENT[slot];
     snprintf_P(metadata[slot].summary,
                sizeof(metadata[slot].summary),
-               PSTR("%c%c: %d F %d V"),
+               PSTR("%c%c: %d F"),
                data.counter,
                data.id,
-               (short)data.tempF,
-               data.voltage);
+               (short)data.tempF);
     Serial.print("Received ~: ");
     Serial.print(metadata[slot].summary);
 
-    if (data.tempF < -10 || data.tempF > 110) {
-      display.showTextScroll("Skipping weird/invalid data");
+    if (data.tempF == 0 || data.tempF == -1 || data.tempF < -10 || data.tempF > 110) {
+      display.showTextScroll("Weird data");
       Serial.println("Skipping weird/invalid data");
       return;
     }
+    // data.tempF += ADJUSTMENT[slot];
     metadata[slot].maxTemp = max(metadata[slot].maxTemp, data.tempF);
     metadata[slot].minTemp = min(metadata[slot].minTemp, data.tempF);
     Serial.print(". Min: "); Serial.print(metadata[slot].minTemp);
@@ -185,19 +183,20 @@ short getChecksum(struct Data * remoteData) {
 
 void handleRoot() {
   Serial.println("Handling /");
-  long now = millis(); 
+  long now = millis();
   char buffer[500];
-  sprintf(buffer,
-          "   Aaron: %s at %d. Min %d Max %d\nBasement: %s at %d. Min %d Max %d\n     Den: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n  Our Br: %s at %d. Min %d Max %d",
-          metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
-          metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
-          metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
-          metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
-          metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
-          metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp,
-          metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp,
-          metadata[7].summary, (now - metadata[7].when) / 1000, (int)metadata[7].minTemp, (int)metadata[7].maxTemp
-         );
+  snprintf_P(buffer,
+             sizeof(buffer),
+             "   Aaron: %s at %d. Min %d Max %d\nBasement: %s at %d. Min %d Max %d\n     Den: %s at %d. Min %d Max %d\n Florida: %s at %d. Min %d Max %d\n  Garage: %s at %d. Min %d Max %d\n    Here: %s at %d. Min %d Max %d\n  Office: %s at %d. Min %d Max %d\n  Our Br: %s at %d. Min %d Max %d\n",
+             metadata[0].summary, (now - metadata[0].when) / 1000, (int)metadata[0].minTemp, (int)metadata[0].maxTemp,
+             metadata[1].summary, (now - metadata[1].when) / 1000, (int)metadata[1].minTemp, (int)metadata[1].maxTemp,
+             metadata[2].summary, (now - metadata[2].when) / 1000, (int)metadata[2].minTemp, (int)metadata[2].maxTemp,
+             metadata[3].summary, (now - metadata[3].when) / 1000, (int)metadata[3].minTemp, (int)metadata[3].maxTemp,
+             metadata[4].summary, (now - metadata[4].when) / 1000, (int)metadata[4].minTemp, (int)metadata[4].maxTemp,
+             metadata[5].summary, (now - metadata[5].when) / 1000, (int)metadata[5].minTemp, (int)metadata[5].maxTemp,
+             metadata[6].summary, (now - metadata[6].when) / 1000, (int)metadata[6].minTemp, (int)metadata[6].maxTemp,
+             metadata[7].summary, (now - metadata[7].when) / 1000, (int)metadata[7].minTemp, (int)metadata[7].maxTemp
+            );
   Serial.println(buffer);
   server.send(200, "text/plain", buffer);
 }
@@ -217,7 +216,11 @@ void loop() {
     long secondsSince = (now - metadata[source].when) / 1000;
     display.showText(NAMES[source], 0, 8);
     if (secondsSince < 9999 && metadata[source].when != 0) {
-      display.showNum(secondsSince, 8, 8);
+      if (secondsSince > 60) {
+        display.showNum(secondsSince, 8, 8);
+      } else {
+        display.showText("    ", 12, 4);
+      }
       display.showNum1decimal(metadata[source].data.tempF, 8, 3);
       display.showText("F", 11, 1);
       char third[12];

@@ -15,5 +15,5 @@ struct RemoteMetaData {
   float maxTemp;
   long when;
   short missed;
-  char summary[32];
+  char summary[64];
 };
