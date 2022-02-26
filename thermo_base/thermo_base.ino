@@ -52,12 +52,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Hello thermo base");
 
-  for (int i = 0; i < NUM_REMOTES; ++i) {
-    metadata[i].missed = 0;
-    metadata[i].when = 0;
-    metadata[i].maxTemp = -100;
-    metadata[i].minTemp = 212;
-  }
+  reset();
 
   display.begin();
   display.setBrightness(1);
@@ -78,8 +73,20 @@ void setup() {
 
   mySerial.begin(BAUD_RATE);
 
-  server.on("/", handleRoot);
+  server.on("/", HTTP_GET, &handleRoot);
   server.begin();
+}
+
+void reset() {
+  for (int i = 0; i < NUM_REMOTES; ++i) {
+    resetOne(i);
+  }
+}
+
+void resetOne(int i) {
+  memset(&metadata[i], 0, sizeof(struct RemoteMetaData));
+  metadata[i].maxTemp = -100;
+  metadata[i].minTemp = 212;
 }
 
 void serialHandler() {
@@ -181,8 +188,30 @@ short getChecksum(struct Data * remoteData) {
   return checksum;
 }
 
+/** IP to String? */
+String toStringIp(IPAddress ip) {
+  String res = "";
+  for (int i = 0; i < 3; i++) {
+    res += String((ip >> (8 * i)) & 0xFF) + ".";
+  }
+  res += String(((ip >> 8 * 3)) & 0xFF);
+  return res;
+}
+
 void handleRoot() {
   Serial.println("Handling /");
+  if (server.hasArg("reset")) {
+    String arg = server.arg("reset");
+    Serial.println("resetting " + arg);
+    if (arg.length() > 0) {
+      long id = arg.toInt();
+      resetOne(id);
+    }
+    server.sendHeader("Location", String("http://") + toStringIp(server.client().localIP()), true);
+    server.send(302, "text/plain", "");   // Empty content inhibits Content-length header so we have to close the socket ourselves.
+    server.client().stop(); // Stop is needed because we sent no content length
+    return;
+  }
   long now = millis();
   char buffer[500];
   snprintf_P(buffer,

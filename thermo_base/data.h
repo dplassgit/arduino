@@ -8,6 +8,7 @@ struct Data {
 };
 
 #define RX_DATA_SIZE 10
+#define SUMMARY_SIZE 32
 
 struct RemoteMetaData {
   struct Data data;
@@ -15,5 +16,5 @@ struct RemoteMetaData {
   float maxTemp;
   long when;
   short missed;
-  char summary[64];
+  char summary[SUMMARY_SIZE];
 };
