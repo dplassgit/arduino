@@ -33,7 +33,7 @@ void setup() {
 
   Serial.println("Hello 7seg Clock serial");
   delay(2000);
-  display.showText("Connecting");
+  display.showTextScroll("Connecting");
 
   WiFi.begin(ssid, pass);               // send credentials
   Serial.println("Connecting");
@@ -61,11 +61,11 @@ void loop() {
   // convert the system (UNIX) time to a local date and time in a configurable format
   struct tm *now = localtime(&present_timestamp);      // break down the timestamp
 
-  populateTimeString(now);
+  populateTimeStringAsNumbers(now);
   display.showTextScroll(dateTimeString);
   delay(3000);
-  populateTimeString2(now);
-  for (int j = 0; j < 3; ++j) {
+  populateTimeStringAsWords(now);
+  for (int j = 0; j < 2; ++j) {
     display.showTextScroll(dateTimeString);
   }
 }
@@ -89,7 +89,7 @@ void time_is_set() {
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
-void populateTimeString(struct tm * dt) {
+void populateTimeStringAsNumbers(struct tm * dt) {
   int hour = dt->tm_hour;
   boolean ampm = hour >= 12;
   if (hour > 12) {
@@ -106,7 +106,7 @@ void populateTimeString(struct tm * dt) {
             );
 }
 
-void populateTimeString2(struct tm * dt) {
+void populateTimeStringAsWords(struct tm * dt) {
   int hour = dt->tm_hour;
   boolean ampm = hour >= 12;
   if (hour > 12) {
@@ -148,19 +148,12 @@ void populateTimeString2(struct tm * dt) {
     numSpace++;
     len += 2;
   }
-  // Serial.print("oldlen: "); Serial.println(strlen(temp));
-  // Serial.print("newlen: "); Serial.println(len);
-  // Serial.print("numspace: "); Serial.println(numSpace);
   // Clear the final destination; copy the temporary string into the right
   // spot, then fix the end-of-string marker.
   memset(dateTimeString, ' ', BUFFER_SIZE);
   strcpy(&dateTimeString[numSpace], temp);
   dateTimeString[numSpace + strlen(temp)] = ' ';
   dateTimeString[len] = 0;
-  //Serial.print("old string: "); Serial.println(temp);
-  //Serial.print("new string: ."); Serial.print(dateTimeString); Serial.println(".");
-  // .                Twenty to Four                .
-  // .                Quarter to Four                .
 }
 
 const char *getHour(int hour) {
@@ -184,61 +177,18 @@ const char *getHour(int hour) {
 
 const char *getMinute(int minute) {
   switch (minute) {
-    case 58: case 59: case 0: case 1: case 2: case 3: return "O'clock";
-    case 4: case 5: case 6: case 7: return "Five Past";
-    case 8: case 9: case 10: case 11: case 12: case 13: return "Ten Past";
-    case 14: case 15: case 16: return "Quarter Past";
-    case 17: case 18: case 19: case 20: case 21: case 22: case 23: return "Twenty Past";
-    case 24: case 25: case 26: case 27: return "Twenty five Past";
+    case 58: case 59: case 0:  case 1:  case 2: return "O'clocK";
+    case 3:  case 4:  case 5:  case 6:  case 7: return "Five Past";
+    case 8:  case 9:  case 10: case 11: case 12: return "Ten Past";
+    case 13: case 14: case 15: case 16: case 17: return "Quarter Past";
+    case 18: case 19: case 20: case 21: case 22: return "20 Past";
+    case 23: case 24: case 25: case 26: case 27: return "25 Past";
     case 28: case 29: case 30: case 31: case 32: return "Half Past";
-    case 33: case 34: case 35: case 36: return "Twenty five to";
-    case 37: case 38: case 39: case 40: case 41: case 42: case 43: return "20 to";
-    case 44: case 45: case 46: return "Quarter to";
-    case 47: case 48: case 49: case 50: case 51: case 52: return "Ten to";
+    case 33: case 34: case 35: case 36: case 37: return "25 to";
+    case 38: case 39: case 40: case 41: case 42: return "20 to";
+    case 43: case 44: case 45: case 46: case 47: return "Quarter to";
+    case 48: case 49: case 50: case 51: case 52: return "Ten to";
     case 53: case 54: case 55: case 56: case 57: return "Five to";
     default: return "";
   }
-}
-
-// ....................................................................................
-void displayDateAndTime() {
-  Serial.print(present_timestamp);      // display system time as UNIX timestamp
-
-  // use ctime() to convert the system (UNIX) time to a local date and time in readable form
-  // NOTE: 'ctime' produces a output in a specific format that looks
-  //        like --> Fri Mar 22 12:11:51 2019  -there is also a newline (\n) appended
-  Serial.print("  ");
-  Serial.print(ctime(&present_timestamp));  // convert timestamp and display
-
-  struct tm *tmp ;                          // NOTE: structure tm is defined in time.h
-  char formattedTime[50];                  //   filled by strftime()
-
-  // convert the system (UNIX) time to a local date and time in a configurable format
-
-  tmp = localtime(&present_timestamp);      // break down the timestamp
-
-  // use strftime() to display the date and time in some other formats
-  // https://www.geeksforgeeks.org/strftime-function-in-c/
-
-  // the following gives output in this form -->  03/22/19 - 12:11 pm EDT
-  //   where %x --> writes localized date representation
-  //         %I --> writes hour as a decimal number, 12 hour clock (range [01,12])
-
-  //         %M --> writes minute as a decimal number (range [00,59])
-  //         %P --> writes localized a.m. or p.m. (locale dependent)
-  //         %Z --> time zone abbreviation name
-  strftime(formattedTime, sizeof(formattedTime), "%x - %I:%M%P %Z", tmp);
-  Serial.println(formattedTime);
-  display.showTextScroll(formattedTime);
-  delay(5000);
-
-  // the following gives output in this form -->  2019-03-22 12:11:51
-  //         %F --> equivalent to "%Y-%m-%d" (the ISO 8601 date format)
-  //         %T --> equivalent to "%H:%M:%S" (the ISO 8601 time format)
-  strftime(formattedTime, sizeof(formattedTime), "%F %T", tmp);
-  Serial.println(formattedTime);
-  display.showTextScroll(formattedTime);
-  delay(5000);
-
-  Serial.println();
 }
