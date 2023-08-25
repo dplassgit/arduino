@@ -63,11 +63,9 @@ void loop() {
 
   populateTimeStringAsNumbers(now);
   display.showTextScroll(dateTimeString);
-  delay(3000);
+  delay(4000);
   populateTimeStringAsWords(now);
-  for (int j = 0; j < 2; ++j) {
-    display.showTextScroll(dateTimeString);
-  }
+  display.showTextScroll(dateTimeString);
 }
 
 

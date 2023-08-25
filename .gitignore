@@ -1,4 +1,2 @@
 *.swp
-espwordclock/config.h
-thermo_base/config.h
-sevensegwordclock/config.h
+*/config.h
