@@ -51,6 +51,17 @@ static int16_t *last_cached_point;
 
 void setup(void)
 {
+  w = gfx->width();
+  h = gfx->height();
+
+  gfx->begin();
+  gfx->fillScreen(BACKGROUND);
+
+  gfx->setCursor(15, h/2-10); // x,y
+  gfx->setTextColor(GREEN);
+  gfx->setTextSize(3);
+  gfx->println("Connecting");
+
   WiFi.mode(WIFI_STA);                  // use only the WiFi 'station' mode
 
   // Initialize Serial Monitor
@@ -65,7 +76,6 @@ void setup(void)
 
   // Initialize a NTPClient to get time
   timeClient.begin();
-  Serial.println(timeClient.getFormattedTime());
 
   // Adjust for EST. Suck it.
   timeClient.setTimeOffset(-14400);
@@ -84,17 +94,14 @@ void setup(void)
   Serial.print("Seconds: ");
   Serial.println(currentSecond);
 
-  gfx->begin();
-  gfx->fillScreen(BACKGROUND);
-
 #ifdef TFT_BL
   pinMode(TFT_BL, OUTPUT);
   digitalWrite(TFT_BL, HIGH);
 #endif
 
+  gfx->fillScreen(BACKGROUND);
+
   // init LCD constant
-  w = gfx->width();
-  h = gfx->height();
   if (w < h)
   {
     center = w / 2;
@@ -120,12 +127,13 @@ void setup(void)
   ss = currentSecond;
 
   targetTime = ((millis() / 1000) + 1) * 1000;
-}
 
-void loop()
-{
   timeClient.update();
 
+  drawTimeAndDate();
+}
+
+void drawTimeAndDate() {
   String currenttime = String(hh) + ":";
   if (mm < 10) currenttime += "0";
   currenttime += String(mm);
@@ -140,21 +148,28 @@ void loop()
   String weekDay = weekDays[timeClient.getDay()];
   int monthDay = ptm->tm_mday;
   String currentDate =  weekDay + " " + String(monthDay);
+  Serial.println("Setting date to"); Serial.println(currentDate);
   gfx->setCursor(80, 145);
   gfx->setTextColor(ORANGE);
   gfx->setTextSize(2);
   gfx->println(currentDate);
+}
+
+void loop()
+{
+  timeClient.update();
 
   unsigned long cur_millis = millis();
   if (cur_millis >= targetTime)
   {
     targetTime += 1000;
     ss++; // Advance second
-    if (ss == 60)
+    if (ss >= 60)
     {
       ss = 0;
       mm++; // Advance minute
       Serial.println("Advancing minute");
+      drawTimeAndDate();
       if (mm > 59)
       {
         mm = 0;
@@ -193,7 +208,7 @@ void loop()
     //    }
   }
 
-  delay(100);
+  delay(250);
 }
 
 void draw_round_clock_mark(int16_t innerR1, int16_t outerR1, int16_t innerR2, int16_t outerR2, int16_t innerR3, int16_t outerR3)
