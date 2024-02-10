@@ -111,7 +111,7 @@ void populateTimeStringAsWords(struct tm * dt) {
     hour -= 12;
   }
   int minute = dt->tm_min;
-  if (minute >= 33) {
+  if (minute >= 43) {
     hour++;
   }
   const char *separator = " ";
