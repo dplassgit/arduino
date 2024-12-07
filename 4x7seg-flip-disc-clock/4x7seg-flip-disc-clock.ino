@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------------*
-   A simple clock that reads from a DS1302 RTC and shows the time on 4 x 7-segment displays
+   A simple clock that reads the time from the internet and shows the time on 4 x 7-segment displays
    Example connection diagram: https://bit.ly/4x7SEG-3x1DOT
 
    The MIT License
@@ -25,28 +25,30 @@
   The declaration of DIN (MOSI) and CLK (SCK) is not necessary,
   because the SPI.h library handles the SPI hardware pins. */
 
+// Use "NodeMCU 0.9 (ESP-12) to program (NOT Generic8266)
+#include <ESP8266WiFi.h>
+#include <time.h>
+#include <coredecls.h>                  //   required for settimeofday_cb()
 #include <FlipDisc.h>   // https://github.com/marcinsaj/FlipDisc 
-#include <RtcDS1302.h>
 
-ThreeWire myWire(2, 3, 4); // IO, SCLK, CE
-RtcDS1302<ThreeWire> Rtc(myWire);
+#include "config.h"
+const char* ssid = SECRET_SSID;
+const char* pass = SECRET_PWD;
 
-// Standard pin declaration for Arduino Uno and PSPS module
-#define EN_PIN  10
-#define CH_PIN  8
-#define PL_PIN  9
+// Pin definitions for the 7-segment clock
+#define EN_PIN  D1
+#define CH_PIN  D2
+#define PL_PIN  D3
 
-// Note, MOSI (DataIn), Clk (SCK) are defaulted to 11 and 13, respectively.
-
-RtcDateTime last;
+// Note, MOSI (DataIn), Clk (SCK) are defaulted to D7 and D5, respectively on the 8266 I have
 
 void setup()
 {
-  Serial.begin(57600);
+  // use only the WiFi 'station' mode
+  WiFi.mode(WIFI_STA);
 
-  Serial.print("compiled: ");
-  Serial.print(__DATE__);
-  Serial.println(__TIME__);
+  Serial.begin(115200);
+  Serial.println("Hello 4x7seg-flip-disc-clock-wifi");
 
   /* Flip.Pin(); it is the most important function and first to call before everything else.
     The function is used to declare pin functions. Before starting the device, double check
@@ -74,74 +76,73 @@ void setup()
   Flip.Test();
   delay(500);
 
-  Flip.Matrix_7Seg(I, N, I, T);
-  delay(500);
-  Flip.Matrix_7Seg(R, T, C, CLR);
-  delay(500);
+  // send credentials
+  WiFi.begin(ssid, pass);
 
-  Rtc.Begin();
-
-  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-  printDateTime(compiled);
-  Serial.println();
-
-  if (!Rtc.IsDateTimeValid())
-  {
-    // Common Causes:
-    //    1) first time you ran and the device wasn't running yet
-    //    2) the battery on the device is low or even missing
-
-    Serial.println("RTC lost confidence in the DateTime!");
-    Flip.Matrix_7Seg(S, E, T, CLR);
-    delay(1000);
-    Rtc.SetDateTime(compiled);
+  Serial.println("Connecting");
+  Flip.Matrix_7Seg(C, O, N, N);
+  int dot = 0;
+  // wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Flip.Disc_7Seg(1, dot % 23, dot % 2); // last argument can be 0 to turn off
+    dot++;
+    Serial.print(".");
   }
+  Serial.println("Connected");
+  Flip.Matrix_7Seg(G, O, O, D);
+  delay(1000);
 
-  if (Rtc.GetIsWriteProtected())
-  {
-    Serial.println("RTC was write protected, enabling writing now");
-    Rtc.SetIsWriteProtected(false);
-    Flip.Matrix_7Seg(R, T, W, P);
-    delay(1000);
-  }
+  // implement NTP update of timekeeping (with automatic hourly updates)
+  configTime(0, 0, "0.pool.ntp.org");
 
-  if (!Rtc.GetIsRunning())
-  {
-    Serial.println("RTC was not actively running, starting now");
-    Rtc.SetIsRunning(true);
-    Flip.Matrix_7Seg(S, T, R, T);
-    delay(1000);
-  }
+  // info to convert UNIX time to local time (including automatic DST update)
+  setenv("TZ", "EST+5EDT,M3.2.0/2:00:00,M11.1.0/2:00:00", 1);
 
-  RtcDateTime now = Rtc.GetDateTime();
-  if (now < compiled)
-  {
-    Serial.println("RTC is older than compile time! (Updating DateTime)");
-    Rtc.SetDateTime(compiled);
-    Flip.Matrix_7Seg(R, T, U, P);
-    delay(1000);
-  }
-  else if (now > compiled)
-  {
-    Serial.println("RTC is newer than compile time. (this is expected)");
-  }
-  last = Rtc.GetDateTime();
-  showTime(last);
+  time_t last = time(nullptr);
+
+  // convert the system (UNIX) time to a local date and time in a configurable format
+  struct tm* last_tm = localtime(&last);      // break down the timestamp
+  showTime(last_tm->tm_hour, last_tm->tm_min);
+
+  // register a callback (execute whenever an NTP update has occurred)
+  settimeofday_cb(timeUpdated);
 }
 
-void showTime(RtcDateTime now) {
-  printDateTime(now);
-  Serial.println();
+int last_hour;
+int last_min;
 
-  int hour = now.Hour();
+// callback routine - arrive here whenever a successful NTP update has occurred
+void timeUpdated() {
+  time_t last = time(nullptr);                 // get UNIX timestamp
+  struct tm *last_tm = localtime(&last);    // convert to local time and break down
+  showTime(last_tm->tm_hour, last_tm->tm_min);
+
+  char UPDATE_TIME[50];                 // buffer for use by strftime()
+  strftime(UPDATE_TIME, sizeof(UPDATE_TIME), "%T", last_tm);  // extract just the 'time' portion
+
+  Serial.print("-------- NTP update at ");
+  Serial.print(UPDATE_TIME);
+  Serial.println(" --------");
+}
+
+// Show the time; update the globals with the "last time shown"
+void showTime(int hour, int minute) {
+  last_hour = hour;
+  last_min = minute;
   if (hour > 12) {
     hour -= 12;
   }
   int hr10 = hour / 10;
   int hr1 = hour % 10;
-  int min10 = now.Minute() / 10;
-  int min1 = now.Minute() % 10;
-  Serial.print("Clock is: "); Serial.print(hr10); Serial.print(hr1); Serial.print(":"); Serial.print(min10); Serial.println(min1);
+  int min10 = minute / 10;
+  int min1 = minute % 10;
+  Serial.print("Clock is: ");
+  Serial.print(hr10);
+  Serial.print(hr1);
+  Serial.print(":");
+  Serial.print(min10);
+  Serial.println(min1);
 
   // Clear first digit if zero.
   if (hr10 == 0) {
@@ -154,91 +155,48 @@ void showTime(RtcDateTime now) {
     This function allows you to display numbers and symbols
     Flip.Matrix_7Seg(data1,data2,data3,data4,data5,data6,data7,data8); */
   Flip.Matrix_7Seg(hr10, hr1, min10, min1);
+  Serial.println("showTime End");
 }
 
-void loop()
-{
-  RtcDateTime now = Rtc.GetDateTime();
-  if (now.Hour() != last.Hour() || now.Minute() != last.Minute()) {
+// Main loop: get the current time; if it's different than last shown time, show it.
+void loop() {
+  time_t now_t  = time(nullptr);
+  // convert the system (UNIX) time to a local date and time in a configurable format
+  struct tm *now = localtime(&now_t);
+  if (now->tm_hour != last_hour) {
+    Serial.println("different hours");
+  }
+  if (now->tm_min != last_min) {
+    Serial.println("different min");
+  }
+  if (now->tm_hour != last_hour || now->tm_min != last_min) {
     // Hour or minute is different; update the whole clock.
-    showTime(now);
-    last = now;
-  } else if (now.Second() != last.Second()) {
-    /* An example of calling the function to set disc no.19 of the first 7-Segment display */
-    /* 0  1  2  3  4
-      19           5
-      18           6
-      17 20 21 22  7
-      16           8
-      15           9
-      14 13 12 11 10 */
-    // Flip one disc in the leftmost column to indicate 10s of seconds
-    for (int i = 0; i <= now.Second() / 10; i++) {
-      Flip.Disc_7Seg(1, 14 + i, 1); // last argument can be 0 to turn off
-    }
+    Serial.print("last_tm: ");
+    Serial.print(last_hour);
+    Serial.print(":");
+    Serial.println(last_min);
+
+    Serial.print("now: ");
+    Serial.print(now->tm_hour);
+    Serial.print(":");
+    Serial.print(now->tm_min);
+    Serial.print(":");
+    Serial.println(now->tm_sec);
+
+    showTime(now->tm_hour, now->tm_min);
   }
 
-  /* 7-Segment displays allow the display of numbers and symbols.
-      Symbols can be displayed using their code name or number e.g. 37/DEG - "°" Degree symbol
-      The full list of symbols can be found in the FlipDisc.h library repository https://github.com/marcinsaj/FlipDisc
-      Code names for symbols:
-      - 0-9
-      - 1/VLR  - " |" - Vertical line - right
-      - 8/ALL  - Set all discs
-      - 10/CLR - Clear display
-      - 11/A
-      - 12/B
-      - 13/C
-      - 14/D
-      - 15/E
-      - 16/F
-      - 17/G
-      - 18/H
-      - 19/I
-      - 20/J
-      - 21/K
-      - 22/L
-      - 23/M
-      - 24/N
-      - 25/O
-      - 26/P
-      - 27/Q
-      - 28/R
-      - 29/S
-      - 30/T
-      - 31/U
-      - 32/V
-      - 33/W
-      - 34/X
-      - 35/Y
-      - 36/Z
-      - 37/DEG - "°"  - Degree symbol
-      - 37/PFH - "%"  - Percent first half symbol
-      - 38/PSH - "%"  - Percent second half symbol
-      - 39/HLU - "¯"  - Horizontal line - upper
-      - 40/HLM - "-"  - Horizontal line - middle
-      - 41/HLL - "_"  - Horizontal line - lower
-      - 42/HLT - "="  - Horizontal line - upper & lower
-      - 43/HLA - "≡"  - All three lines
-      - 40/MIN - "-"  - Minus symbol
-      - 44/VLL - "| " - Vertical line - left
-      - 45/VLA - "||" - All Vertical lines */
-}
-
-#define countof(a) (sizeof(a) / sizeof(a[0]))
-
-void printDateTime(const RtcDateTime& dt)
-{
-  char datestring[26];
-
-  snprintf_P(datestring,
-             countof(datestring),
-             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-             dt.Month(),
-             dt.Day(),
-             dt.Year(),
-             dt.Hour(),
-             dt.Minute(),
-             dt.Second() );
-  Serial.print(datestring);
+  /* An example of calling the function to set disc no.19 of the first 7-Segment display */
+  /* 0  1  2  3  4
+    19           5
+    18           6
+    17 20 21 22  7
+    16           8
+    15           9
+    14 13 12 11 10 */
+  // Flip one disc in the leftmost column to indicate 10s of seconds. I don't love this.
+  for (int i = 0; i <= now->tm_sec / 10; i++) {
+    Flip.Disc_7Seg(1, 14 + i, 1); // last argument can be 0 to turn off
+  }
+  delay(250);
 }
