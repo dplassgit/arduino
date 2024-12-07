@@ -1,3 +1,4 @@
+// Use "NodeMCU 0.9 (ESP-12) to program (NOT Generic8266)
 #include "config.h"
 #include <ESP8266WiFi.h>
 #include <time.h>
@@ -32,7 +33,6 @@ void setup() {
   Serial.begin(115200);
 
   Serial.println("Hello 7seg Clock serial");
-  delay(2000);
   display.showTextScroll("Connecting");
 
   WiFi.begin(ssid, pass);               // send credentials
@@ -44,6 +44,9 @@ void setup() {
     display.showText(".", dot++, 1);
   }
   Serial.println("Connected");
+  display.showTextScroll("Connected");
+  delay(1000);
+
   // implement NTP update of timekeeping (with automatic hourly updates)
   configTime(0, 0, "0.pool.ntp.org");
 
