@@ -103,20 +103,25 @@ void setup()
 
   // convert the system (UNIX) time to a local date and time in a configurable format
   struct tm* last_tm = localtime(&last);      // break down the timestamp
-  showTime(last_tm->tm_hour, last_tm->tm_min);
+  showTime(last_tm->tm_hour, last_tm->tm_min, last_tm->tm_sec);
 
   // register a callback (execute whenever an NTP update has occurred)
   settimeofday_cb(timeUpdated);
+
+  // We're going to blink the LED also, so we can tell that it's alive.
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
 }
 
 int last_hour;
 int last_min;
+int last_sec;
 
 // callback routine - arrive here whenever a successful NTP update has occurred
 void timeUpdated() {
   time_t last = time(nullptr);                 // get UNIX timestamp
   struct tm *last_tm = localtime(&last);    // convert to local time and break down
-  showTime(last_tm->tm_hour, last_tm->tm_min);
+  showTime(last_tm->tm_hour, last_tm->tm_min, last_tm->tm_sec);
 
   char UPDATE_TIME[50];                 // buffer for use by strftime()
   strftime(UPDATE_TIME, sizeof(UPDATE_TIME), "%T", last_tm);  // extract just the 'time' portion
@@ -127,9 +132,10 @@ void timeUpdated() {
 }
 
 // Show the time; update the globals with the "last time shown"
-void showTime(int hour, int minute) {
+void showTime(int hour, int minute, int sec) {
   last_hour = hour;
   last_min = minute;
+  last_sec = sec;
   if (hour > 12) {
     hour -= 12;
   }
@@ -163,12 +169,36 @@ void loop() {
   time_t now_t  = time(nullptr);
   // convert the system (UNIX) time to a local date and time in a configurable format
   struct tm *now = localtime(&now_t);
-  if (now->tm_hour != last_hour) {
-    Serial.println("different hours");
+
+  /* An example of calling the function to set disc no.19 of the first 7-Segment display */
+  /* 0  1  2  3  4
+    19           5
+    18           6
+    17 20 21 22  7
+    16           8
+    15           9
+    14 13 12 11 10 */
+  int sec = now->tm_sec;
+  if (sec != last_sec) {
+      // Flip one disc in the leftmost column to indicate 10s of seconds. I don't love this.
+   for (int i = 0; i < sec / 10; i++) {
+     Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
+   }
+//    for (int i = 0; i < 5; ++i) {
+//      Flip.Disc_7Seg(1, 10 + i, (i + sec) % 2); // last argument can be 0 to turn off
+//    }
+    if ((sec % 2) == 0) {
+      digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    Serial.print("updated sec. was: ");
+    Serial.print(last_sec);
+    Serial.print(", now: " );
+    Serial.println(sec);
   }
-  if (now->tm_min != last_min) {
-    Serial.println("different min");
-  }
+  last_sec = sec;
+
   if (now->tm_hour != last_hour || now->tm_min != last_min) {
     // Hour or minute is different; update the whole clock.
     Serial.print("last_tm: ");
@@ -183,20 +213,7 @@ void loop() {
     Serial.print(":");
     Serial.println(now->tm_sec);
 
-    showTime(now->tm_hour, now->tm_min);
+    // this sets last_hour, last_min and last_sec
+    showTime(now->tm_hour, now->tm_min, now->tm_sec);
   }
-
-  /* An example of calling the function to set disc no.19 of the first 7-Segment display */
-  /* 0  1  2  3  4
-    19           5
-    18           6
-    17 20 21 22  7
-    16           8
-    15           9
-    14 13 12 11 10 */
-  // Flip one disc in the leftmost column to indicate 10s of seconds. I don't love this.
-  for (int i = 0; i <= now->tm_sec / 10; i++) {
-    Flip.Disc_7Seg(1, 14 + i, 1); // last argument can be 0 to turn off
-  }
-  delay(250);
 }
