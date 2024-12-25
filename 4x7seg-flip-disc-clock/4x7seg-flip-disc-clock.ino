@@ -42,13 +42,13 @@ const char* pass = SECRET_PWD;
 
 // Note, MOSI (DataIn), Clk (SCK) are defaulted to D7 and D5, respectively on the 8266 I have
 
-void setup()
-{
-  // use only the WiFi 'station' mode
-  WiFi.mode(WIFI_STA);
-
+void setup() {
   Serial.begin(115200);
   Serial.println("Hello 4x7seg-flip-disc-clock-wifi");
+
+  // We're going to blink the LED also, so we can tell that it's alive.
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED on (yes the logic is flopped)
 
   /* Flip.Pin(); it is the most important function and first to call before everything else.
     The function is used to declare pin functions. Before starting the device, double check
@@ -75,6 +75,7 @@ void setup()
   /* The function is used to test all declared displays - turn on and off all displays */
   Flip.Test();
   delay(500);
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off (yes the logic is flopped)
 
   // send credentials
   WiFi.begin(ssid, pass);
@@ -108,9 +109,7 @@ void setup()
   // register a callback (execute whenever an NTP update has occurred)
   settimeofday_cb(timeUpdated);
 
-  // We're going to blink the LED also, so we can tell that it's alive.
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 int last_hour;
@@ -180,13 +179,10 @@ void loop() {
     14 13 12 11 10 */
   int sec = now->tm_sec;
   if (sec != last_sec) {
-      // Flip one disc in the leftmost column to indicate 10s of seconds. I don't love this.
-   for (int i = 0; i < sec / 10; i++) {
-     Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
-   }
-//    for (int i = 0; i < 5; ++i) {
-//      Flip.Disc_7Seg(1, 10 + i, (i + sec) % 2); // last argument can be 0 to turn off
-//    }
+    // Flip one disc in bottom row to indicate 10s of seconds.
+    for (int i = 0; i < sec / 10; i++) {
+      Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
+    }
     if ((sec % 2) == 0) {
       digitalWrite(LED_BUILTIN, HIGH);
     } else {
