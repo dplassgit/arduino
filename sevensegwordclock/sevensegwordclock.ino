@@ -59,6 +59,11 @@ void setup() {
 }
 
 void loop() {
+  //  loop2();
+  loopOrig();
+}
+
+void loopOrig() {
   present_timestamp = time(nullptr);
 
   // convert the system (UNIX) time to a local date and time in a configurable format
@@ -66,9 +71,29 @@ void loop() {
 
   populateTimeStringAsNumbers(now);
   display.showTextScroll(dateTimeString);
+  Serial.println(dateTimeString);
+
   delay(4000);
   populateTimeStringAsWords(now);
   display.showTextScroll(dateTimeString);
+  Serial.println(dateTimeString);
+}
+
+void loop2() {
+  for (int hr = 1; hr < 24; ++hr) {
+    for (int min = 2; min < 60; min += 7) {
+      struct tm testNow;
+      testNow.tm_hour = hr;
+      testNow.tm_min = min;
+      populateTimeStringAsNumbers(&testNow);
+      Serial.println(dateTimeString);
+      display.showTextScroll(dateTimeString);
+
+      populateTimeStringAsWords(&testNow);
+      Serial.println(dateTimeString);
+      //  display.showTextScroll(dateTimeString);
+    }
+  }
 }
 
 
@@ -123,14 +148,9 @@ void populateTimeStringAsWords(struct tm * dt) {
   char temp[BUFFER_SIZE];
 
   if (minute >= 58 || minute <= 2 || (minute >= 33 && minute <= 42)) {
-    if (hour == 0 || hour == 12 || hour == 24) {
-      // don't show "noon o'clock" or "midnight o'clock"
-      minuteStr = "";
-      separator = "";
-    } else {
-      // swap; instead of "O'clock Ten" show "Ten O'clock".
-      const char *swaptemp; swaptemp = hourStr; hourStr = minuteStr; minuteStr = swaptemp;
-    }
+    // swap; instead of "O'clock Ten" show "Ten O'clock".
+    // similarly, 33 through 42 are "hour thirty five" and "hour forty"
+    const char *swaptemp; swaptemp = hourStr; hourStr = minuteStr; minuteStr = swaptemp;
   }
   snprintf_P(temp,
              countof(temp),
@@ -170,26 +190,25 @@ const char *getHour(int hour) {
     case 9: case 21: return "Nine";
     case 10: case 22: return "Ten";
     case 11: case 23: return "Eleven";
-    case 12: return "Noon";
-    case 0: case 24: return "12";
+    case 12: case 0: case 24: return "12";
     default: return "";
   }
 }
 
 const char *getMinute(int minute) {
   switch (minute) {
-    case 58: case 59: case 0:  case 1:  case 2: return "O'clocK";
-    case 3:  case 4:  case 5:  case 6:  case 7: return "Five Past";
-    case 8:  case 9:  case 10: case 11: case 12: return "Ten Past";
-    case 13: case 14: case 15: case 16: case 17: return "a Quarter Past";
-    case 18: case 19: case 20: case 21: case 22: return "20 Past";
-    case 23: case 24: case 25: case 26: case 27: return "25 Past";
-    case 28: case 29: case 30: case 31: case 32: return "Half Past";
-    case 33: case 34: case 35: case 36: case 37: return "Thirty five";
-    case 38: case 39: case 40: case 41: case 42: return "Forty";
-    case 43: case 44: case 45: case 46: case 47: return "a Quarter to";
-    case 48: case 49: case 50: case 51: case 52: return "Ten to";
-    case 53: case 54: case 55: case 56: case 57: return "Five to";
+    case 58: case 59: case 0:  case 1:  case 2: return "O'clocK"; // needs hour before
+    case 3:  case 4:  case 5:  case 6:  case 7: return "Five Past"; // needs hour afterwards
+    case 8:  case 9:  case 10: case 11: case 12: return "Ten Past"; // needs hour afterwards
+    case 13: case 14: case 15: case 16: case 17: return "a Quarter Past"; // needs hour afterwards
+    case 18: case 19: case 20: case 21: case 22: return "20 Past"; // needs hour afterwards
+    case 23: case 24: case 25: case 26: case 27: return "25 Past"; // needs hour afterwards
+    case 28: case 29: case 30: case 31: case 32: return "Half Past"; // needs hour afterwards
+    case 33: case 34: case 35: case 36: case 37: return "Thirty five"; // needs hour before
+    case 38: case 39: case 40: case 41: case 42: return "Forty"; // needs hour before
+    case 43: case 44: case 45: case 46: case 47: return "a Quarter to";  // needs hour afterwards
+    case 48: case 49: case 50: case 51: case 52: return "Ten to"; // needs hour afterwards
+    case 53: case 54: case 55: case 56: case 57: return "Five to"; // needs hour afterwards
     default: return "";
   }
 }
