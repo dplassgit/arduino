@@ -26,21 +26,23 @@
   because the SPI.h library handles the SPI hardware pins. */
 
 // Use "NodeMCU 0.9 (ESP-12) to program (NOT Generic8266)
-#include <ESP8266WiFi.h>
+#include <coredecls.h>  // for settimeofday_cb()
 #include <time.h>
-#include <coredecls.h>                  //   required for settimeofday_cb()
+#include <ESP8266WiFi.h>
 #include <FlipDisc.h>   // https://github.com/marcinsaj/FlipDisc 
 
+// Local include for sekrits
 #include "config.h"
 const char* ssid = SECRET_SSID;
 const char* pass = SECRET_PWD;
 
-// Pin definitions for the 7-segment clock
+// Pin definitions for the flip clock
 #define EN_PIN  D1
 #define CH_PIN  D2
 #define PL_PIN  D3
 
-// Note, MOSI (DataIn), Clk (SCK) are defaulted to D7 and D5, respectively on the 8266 I have
+// Note, MOSI (DataIn), Clk (SCLK) default to D7 and D5, respectively, on the 8266 I have.
+// I don't know how to change these, shrug.
 
 void setup() {
   Serial.begin(115200);
@@ -72,27 +74,28 @@ void setup() {
     anywhere in the code. Recommended delay range: 0 - 100ms, max 255ms */
   Flip.Delay(10);
 
-  /* The function is used to test all declared displays - turn on and off all displays */
-  Flip.Test();
+  /* Turn on and off all displays */
+  Flip.All();
   delay(500);
+  Flip.Clear();
+
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED off (yes the logic is flopped)
 
   // send credentials
-  WiFi.begin(ssid, pass);
-
   Serial.println("Connecting");
   Flip.Matrix_7Seg(C, O, N, N);
+  WiFi.begin(ssid, pass);
   int dot = 0;
-  // wait for connection
+  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Flip.Disc_7Seg(1, dot % 23, dot % 2); // last argument can be 0 to turn off
+    Flip.Disc_7Seg(1, (dot/2) % 23, dot % 2); // last argument can be 0 to turn off
     dot++;
     Serial.print(".");
   }
   Serial.println("Connected");
   Flip.Matrix_7Seg(G, O, O, D);
-  delay(1000);
+  delay(2000);
 
   // implement NTP update of timekeeping (with automatic hourly updates)
   configTime(0, 0, "0.pool.ntp.org");
@@ -116,7 +119,7 @@ int last_hour;
 int last_min;
 int last_sec;
 
-// callback routine - arrive here whenever a successful NTP update has occurred
+// Callback routine - we arrive here whenever a successful NTP update has occurred
 void timeUpdated() {
   time_t last = time(nullptr);                 // get UNIX timestamp
   struct tm *last_tm = localtime(&last);    // convert to local time and break down
@@ -125,9 +128,8 @@ void timeUpdated() {
   char UPDATE_TIME[50];                 // buffer for use by strftime()
   strftime(UPDATE_TIME, sizeof(UPDATE_TIME), "%T", last_tm);  // extract just the 'time' portion
 
-  Serial.print("-------- NTP update at ");
-  Serial.print(UPDATE_TIME);
-  Serial.println(" --------");
+  Serial.print(" NTP update at ");
+  Serial.println(UPDATE_TIME);
 }
 
 // Show the time; update the globals with the "last time shown"
@@ -179,10 +181,28 @@ void loop() {
     14 13 12 11 10 */
   int sec = now->tm_sec;
   if (sec != last_sec) {
-    // Flip one disc in bottom row to indicate 10s of seconds.
+    int hour = now->tm_hour;
+    int hr10 = hour / 10;
+    // If hour is 10-12, turn bit 10 off, otherwise turn bit 10 on
     for (int i = 0; i < sec / 10; i++) {
-      Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
+      if (i == 0 && hr10 == 1) {
+        // Serial.println("turning *on* bit 10 of 1");
+        Flip.Disc_7Seg(i + 1, 10, 1);
+      } else {
+        if (i > 3) {
+          // if we're in the last 10 seconds, turn off bit 4 instead.
+          // Serial.println("turning off bit 4 of 4");
+          Flip.Disc_7Seg(4, 4, 0);
+        } else {
+          // Serial.print("turning off bit 10 of "); Serial.println(i + 1);
+          Flip.Disc_7Seg(i + 1, 10, 0);
+        }
+      }
     }
+    // Flip one disc in bottom row to indicate 10s of seconds.
+    //  for (int i = 0; i < sec / 10; i++) {
+    //    Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
+    //  }
     if ((sec % 2) == 0) {
       digitalWrite(LED_BUILTIN, HIGH);
     } else {
