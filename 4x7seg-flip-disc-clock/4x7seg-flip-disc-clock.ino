@@ -14,6 +14,8 @@
    2. Or any Arduino board + Pulse Shaper Power Supply - https://bit.ly/PSPS-FD
   ----------------------------------------------------------------------------------*/
 
+// Use "NodeMCU 0.9 (ESP-12)" or "WEMOS D1 (clone)" to program (NOT Generic8266)
+
 /* The library <FlipDisc.h> uses SPI to control flip-disc displays.
   The user must remember to connect the display inputs marked:
   - DIN - data in - to the MOSI (SPI) output of the microcontroller,
@@ -25,10 +27,14 @@
   The declaration of DIN (MOSI) and CLK (SCK) is not necessary,
   because the SPI.h library handles the SPI hardware pins. */
 
-// Use "NodeMCU 0.9 (ESP-12) to program (NOT Generic8266)
 #include <coredecls.h>  // for settimeofday_cb()
 #include <time.h>
+
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+
 #include <FlipDisc.h>   // https://github.com/marcinsaj/FlipDisc 
 
 // Local include for sekrits
@@ -36,12 +42,15 @@
 const char* ssid = SECRET_SSID;
 const char* pass = SECRET_PWD;
 
+// For OTA upload status
+int progressStatus = 0;
+
 // Pin definitions for the flip clock
 #define EN_PIN  D1
 #define CH_PIN  D2
 #define PL_PIN  D3
 
-// Note, MOSI (DataIn), Clk (SCLK) default to D7 and D5, respectively, on the 8266 I have.
+// Note, MOSI (DataIn), Clk (SCLK) default to D7 and D5, respectively, on the ESP8266 I have.
 // I don't know how to change these, shrug.
 
 void setup() {
@@ -84,12 +93,13 @@ void setup() {
   // send credentials
   Serial.println("Connecting");
   Flip.Matrix_7Seg(C, O, N, N);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pass);
   int dot = 0;
   // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     delay(500);
-    Flip.Disc_7Seg(1, (dot/2) % 23, dot % 2); // last argument can be 0 to turn off
+    Flip.Disc_7Seg(1, (dot / 2) % 23, dot % 2); // last argument can be 0 to turn off
     dot++;
     Serial.print(".");
   }
@@ -113,6 +123,55 @@ void setup() {
   settimeofday_cb(timeUpdated);
 
   digitalWrite(LED_BUILTIN, LOW);
+
+  // All sorts of OTA (over-the-air) updates.
+  // Code mostly copied from https://randomnerdtutorials.com/esp8266-ota-updates-with-arduino-ide-over-the-air/
+  ArduinoOTA.setPort(OTA_PORT);
+  ArduinoOTA.setHostname("flipclock");
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([]() {
+    progressStatus = 0;
+    Flip.Matrix_7Seg(S, T, R, T);
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    digitalWrite(LED_BUILTIN, HIGH);
+    Flip.Matrix_7Seg(E, N, D, CLR);
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    if (progressStatus == 0) {
+      Flip.Matrix_7Seg(P, R, O, G);
+    }
+    digitalWrite(LED_BUILTIN, progressStatus % 2);
+    progressStatus++;
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    digitalWrite(LED_BUILTIN, LOW);
+    Flip.Matrix_7Seg(E, R, R, CLR);
+    delay(2000);
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Flip.Matrix_7Seg(A, U, T, H);
+      Serial.println("Auth Failed");
+    }  else if (error == OTA_BEGIN_ERROR) {
+      Flip.Matrix_7Seg(B, E, G, N);
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Flip.Matrix_7Seg(C, O, N, N);
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Flip.Matrix_7Seg(R, E, C, V);
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Flip.Matrix_7Seg(E, N, D, CLR);
+      Serial.println("End Failed");
+    }
+    delay(2000);
+  });
+  ArduinoOTA.begin();
 }
 
 int last_hour;
@@ -182,10 +241,13 @@ void loop() {
   int sec = now->tm_sec;
   if (sec != last_sec) {
     int hour = now->tm_hour;
+    if (hour > 12) {
+      hour -= 12;
+    }
     int hr10 = hour / 10;
     // If hour is 10-12, turn bit 10 off, otherwise turn bit 10 on
     for (int i = 0; i < sec / 10; i++) {
-      if (i == 0 && hr10 == 1) {
+      if (i == 0 && hr10 == 0) {
         // Serial.println("turning *on* bit 10 of 1");
         Flip.Disc_7Seg(i + 1, 10, 1);
       } else {
@@ -232,4 +294,5 @@ void loop() {
     // this sets last_hour, last_min and last_sec
     showTime(now->tm_hour, now->tm_min, now->tm_sec);
   }
+  ArduinoOTA.handle();
 }
