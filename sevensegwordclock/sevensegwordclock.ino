@@ -1,6 +1,11 @@
-// Use "NodeMCU 0.9 (ESP-12) to program (NOT Generic8266)
+// Use "NodeMCU 0.9 (ESP-12)" or "WEMOS mini D1 (clone)" to program (NOT Generic8266)
 #include "config.h"
+
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+
 #include <time.h>
 #include <coredecls.h>                  //   required for settimeofday_cb()
 
@@ -13,9 +18,11 @@ const char* pass = SECRET_PWD;
 // Timing parameters
 time_t present_timestamp;
 
+int progressStatus = 0;
+
 // Display
 #define NUM_DIGITS 8
-const byte dataPin = D1;
+const byte dataPin = D4;
 const byte loadPin = D2;
 const byte clockPin = D3;
 
@@ -32,19 +39,21 @@ void setup() {
 
   Serial.begin(115200);
 
-  Serial.println("Hello 7seg Clock serial");
-  display.showTextScroll("Connecting");
+  Serial.println("Hello 7seg Clock serial d1");
+  display.showTextScroll("Connecting D1....  ");
 
   WiFi.begin(ssid, pass);               // send credentials
   Serial.println("Connecting");
   int dot = 0;
   // wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     delay(500);
     display.showText(".", dot++, 1);
   }
   Serial.println("Connected");
-  display.showTextScroll("Connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  display.showTextScroll("Connected!!!   ");
   delay(1000);
 
   // implement NTP update of timekeeping (with automatic hourly updates)
@@ -54,13 +63,60 @@ void setup() {
   setenv("TZ", "EST+5EDT,M3.2.0/2:00:00,M11.1.0/2:00:00", 1);
 
   // register a callback (execute whenever an NTP update has occurred)
-  // DBP: Unclear if this is needed.
   settimeofday_cb(time_is_set);
+
+  // All sorts of OTA (over-the-air) updates.
+  // Code mostly copied from https://randomnerdtutorials.com/esp8266-ota-updates-with-arduino-ide-over-the-air/
+  ArduinoOTA.setPort(OTA_PORT);
+  ArduinoOTA.setHostname("sevensegwordd1");
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([]() {
+    progressStatus = 0;
+    display.showText("Start");
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    digitalWrite(LED_BUILTIN, HIGH);
+    display.showText("End");
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    if (progressStatus == 0) {
+      display.showText("Updating");
+    }
+    digitalWrite(LED_BUILTIN, progressStatus % 2);
+    progressStatus++;
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      display.showTextScroll("Auth failed");
+      Serial.println("Auth Failed");
+    }  else if (error == OTA_BEGIN_ERROR) {
+      display.showTextScroll("Begin failed");
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      display.showTextScroll("Connect failed");
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      display.showTextScroll("Receive failed");
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      display.showTextScroll("End failed");
+      Serial.println("End Failed");
+    }
+    delay(2000);
+  });
+  ArduinoOTA.begin();
 }
 
 void loop() {
   //  loop2();
   loopOrig();
+  ArduinoOTA.handle();
 }
 
 void loopOrig() {
