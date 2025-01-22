@@ -24,7 +24,6 @@ const char* password = STAPSK;
   const byte dataPin = A0;
   const byte clockPin = A1;
   const byte loadPin = A2;
-  const byte intPin = 2;
 */
 /* For ESP8266MOD */
 const byte dataPin = D1;
