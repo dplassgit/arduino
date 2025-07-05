@@ -1,3 +1,4 @@
+// Probably use Node MCU 1.0 (ESP-12E)
 #include <ESP8266WiFi.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -49,23 +50,24 @@ static int16_t *cached_points;
 static uint16_t cached_points_idx = 0;
 static int16_t *last_cached_point;
 
-void setup(void)
-{
+void setup() {
+  // Initialize Serial Monitor
+  Serial.begin(115200);
+  Serial.println("Hello roundclock");
+
   w = gfx->width();
   h = gfx->height();
 
   gfx->begin();
   gfx->fillScreen(BACKGROUND);
 
-  gfx->setCursor(15, h/2-10); // x,y
+  gfx->setCursor(15, h / 2 - 10); // x,y
   gfx->setTextColor(GREEN);
   gfx->setTextSize(3);
-  gfx->println("Connecting");
+  gfx->println("Connecting..");
 
   WiFi.mode(WIFI_STA);                  // use only the WiFi 'station' mode
 
-  // Initialize Serial Monitor
-  Serial.begin(115200);
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -102,12 +104,9 @@ void setup(void)
   gfx->fillScreen(BACKGROUND);
 
   // init LCD constant
-  if (w < h)
-  {
+  if (w < h) {
     center = w / 2;
-  }
-  else
-  {
+  } else {
     center = h / 2;
   }
   hHandLen = center * 3 / 8;
@@ -155,27 +154,22 @@ void drawTimeAndDate() {
   gfx->println(currentDate);
 }
 
-void loop()
-{
+void loop() {
   timeClient.update();
 
   unsigned long cur_millis = millis();
-  if (cur_millis >= targetTime)
-  {
+  if (cur_millis >= targetTime) {
     targetTime += 1000;
     ss++; // Advance second
-    if (ss >= 60)
-    {
+    if (ss >= 60) {
       ss = 0;
       mm++; // Advance minute
       Serial.println("Advancing minute");
       drawTimeAndDate();
-      if (mm > 59)
-      {
+      if (mm > 59) {
         mm = 0;
         hh++; // Advance hour
-        if (hh > 23)
-        {
+        if (hh > 23) {
           hh = 0;
         }
       }
@@ -199,40 +193,33 @@ void loop()
     // redraw hands
     redraw_hands_cached_draw_and_erase();
 
-//    ohx = nhx;
-//    ohy = nhy;
-//    omx = nmx;
-//    omy = nmy;
-//    osx = nsx;
-//    osy = nsy;
+    //    ohx = nhx;
+    //    ohy = nhy;
+    //    omx = nmx;
+    //    omy = nmy;
+    //    osx = nsx;
+    //    osy = nsy;
     //    }
   }
 
   delay(250);
 }
 
-void draw_round_clock_mark(int16_t innerR1, int16_t outerR1, int16_t innerR2, int16_t outerR2, int16_t innerR3, int16_t outerR3)
-{
+void draw_round_clock_mark(int16_t innerR1, int16_t outerR1, int16_t innerR2, int16_t outerR2, int16_t innerR3, int16_t outerR3) {
   float x, y;
   int16_t x0, x1, y0, y1, innerR, outerR;
   uint16_t c;
 
-  for (uint8_t i = 0; i < 60; i++)
-  {
-    if ((i % 15) == 0)
-    {
+  for (uint8_t i = 0; i < 60; i++) {
+    if ((i % 15) == 0) {
       innerR = innerR1;
       outerR = outerR1;
       c = MARK_COLOR;
-    }
-    else if ((i % 5) == 0)
-    {
+    } else if ((i % 5) == 0) {
       innerR = innerR2;
       outerR = outerR2;
       c = MARK_COLOR;
-    }
-    else
-    {
+    } else {
       innerR = innerR3;
       outerR = outerR3;
       c = SUBMARK_COLOR;
@@ -250,8 +237,7 @@ void draw_round_clock_mark(int16_t innerR1, int16_t outerR1, int16_t innerR2, in
   }
 }
 
-void redraw_hands_cached_draw_and_erase()
-{
+void redraw_hands_cached_draw_and_erase() {
   gfx->startWrite();
   draw_and_erase_cached_line(center, center, nsx, nsy, SECOND_COLOR, cached_points, sHandLen + 1, false, false);
   draw_and_erase_cached_line(center, center, nhx, nhy, HOUR_COLOR, cached_points + ((sHandLen + 1) * 2), hHandLen + 1, true, false);
@@ -259,14 +245,12 @@ void redraw_hands_cached_draw_and_erase()
   gfx->endWrite();
 }
 
-void draw_and_erase_cached_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t color, int16_t *cache, int16_t cache_len, bool cross_check_second, bool cross_check_hour)
-{
+void draw_and_erase_cached_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t color, int16_t *cache, int16_t cache_len, bool cross_check_second, bool cross_check_hour) {
 #if defined(ESP8266)
   yield();
 #endif
   bool steep = _diff(y1, y0) > _diff(x1, x0);
-  if (steep)
-  {
+  if (steep) {
     _swap_int16_t(x0, y0);
     _swap_int16_t(x1, y1);
   }
@@ -280,51 +264,39 @@ void draw_and_erase_cached_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
   int8_t ystep = (y0 < y1) ? 1 : -1;
   x1 += xstep;
   int16_t x, y, ox, oy;
-  for (uint16_t i = 0; i <= dx; i++)
-  {
-    if (steep)
-    {
+  for (uint16_t i = 0; i <= dx; i++) {
+    if (steep) {
       x = y0;
       y = x0;
-    }
-    else
-    {
+    } else {
       x = x0;
       y = y0;
     }
     ox = *(cache + (i * 2));
     oy = *(cache + (i * 2) + 1);
-    if ((x == ox) && (y == oy))
-    {
-      if (cross_check_second || cross_check_hour)
-      {
+    if ((x == ox) && (y == oy)) {
+      if (cross_check_second || cross_check_hour) {
         write_cache_pixel(x, y, color, cross_check_second, cross_check_hour);
       }
-    }
-    else
-    {
+    } else {
       write_cache_pixel(x, y, color, cross_check_second, cross_check_hour);
-      if ((ox > 0) || (oy > 0))
-      {
+      if ((ox > 0) || (oy > 0)) {
         write_cache_pixel(ox, oy, BACKGROUND, cross_check_second, cross_check_hour);
       }
       *(cache + (i * 2)) = x;
       *(cache + (i * 2) + 1) = y;
     }
-    if (err < dy)
-    {
+    if (err < dy) {
       y0 += ystep;
       err += dx;
     }
     err -= dy;
     x0 += xstep;
   }
-  for (uint16_t i = dx + 1; i < cache_len; i++)
-  {
+  for (uint16_t i = dx + 1; i < cache_len; i++) {
     ox = *(cache + (i * 2));
     oy = *(cache + (i * 2) + 1);
-    if ((ox > 0) || (oy > 0))
-    {
+    if ((ox > 0) || (oy > 0)) {
       write_cache_pixel(ox, oy, BACKGROUND, cross_check_second, cross_check_hour);
     }
     *(cache + (i * 2)) = 0;
@@ -332,27 +304,20 @@ void draw_and_erase_cached_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
   }
 }
 
-void write_cache_pixel(int16_t x, int16_t y, int16_t color, bool cross_check_second, bool cross_check_hour)
-{
+void write_cache_pixel(int16_t x, int16_t y, int16_t color, bool cross_check_second, bool cross_check_hour) {
   int16_t *cache = cached_points;
-  if (cross_check_second)
-  {
-    for (uint16_t i = 0; i <= sHandLen; i++)
-    {
-      if ((x == *(cache++)) && (y == *(cache)))
-      {
+  if (cross_check_second) {
+    for (uint16_t i = 0; i <= sHandLen; i++) {
+      if ((x == *(cache++)) && (y == *(cache))) {
         return;
       }
       cache++;
     }
   }
-  if (cross_check_hour)
-  {
+  if (cross_check_hour) {
     cache = cached_points + ((sHandLen + 1) * 2);
-    for (uint16_t i = 0; i <= hHandLen; i++)
-    {
-      if ((x == *(cache++)) && (y == *(cache)))
-      {
+    for (uint16_t i = 0; i <= hHandLen; i++) {
+      if ((x == *(cache++)) && (y == *(cache))) {
         return;
       }
       cache++;
