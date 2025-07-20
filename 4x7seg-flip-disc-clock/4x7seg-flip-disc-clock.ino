@@ -14,7 +14,7 @@
    2. Or any Arduino board + Pulse Shaper Power Supply - https://bit.ly/PSPS-FD
   ----------------------------------------------------------------------------------*/
 
-// Use "NodeMCU 0.9 (ESP-12)" or "WEMOS D1 (clone)" to program (NOT Generic8266)
+// Use "LOLIN(WEMOS) D1 mini (clone)" to program (NOT Generic8266)
 
 /* The library <FlipDisc.h> uses SPI to control flip-disc displays.
   The user must remember to connect the display inputs marked:
@@ -270,6 +270,9 @@ void loop() {
     } else {
       digitalWrite(LED_BUILTIN, LOW);
     }
+//    Flip.Disc_7Seg(2, 7, (sec % 2));
+//    Flip.Disc_7Seg(3, 17, (sec % 2));
+    
     Serial.print("updated sec. was: ");
     Serial.print(last_sec);
     Serial.print(", now: " );
