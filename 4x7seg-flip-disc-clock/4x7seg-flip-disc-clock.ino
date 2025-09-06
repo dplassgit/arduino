@@ -245,33 +245,30 @@ void loop() {
       hour -= 12;
     }
     int hr10 = hour / 10;
-    // If hour is 10-12, turn bit 10 off, otherwise turn bit 10 on
+    
+    // Turn off a disc every 10 seconds
     for (int i = 0; i < sec / 10; i++) {
       if (i == 0 && hr10 == 0) {
-        // Serial.println("turning *on* bit 10 of 1");
         Flip.Disc_7Seg(i + 1, 10, 1);
       } else {
         if (i > 3) {
-          // if we're in the last 10 seconds, turn off bit 4 instead.
-          // Serial.println("turning off bit 4 of 4");
+          // if we're in the last 10 seconds, turn off disc 4 instead.
           Flip.Disc_7Seg(4, 4, 0);
         } else {
-          // Serial.print("turning off bit 10 of "); Serial.println(i + 1);
           Flip.Disc_7Seg(i + 1, 10, 0);
         }
       }
     }
-    // Flip one disc in bottom row to indicate 10s of seconds.
-    //  for (int i = 0; i < sec / 10; i++) {
-    //    Flip.Disc_7Seg(1, 10 + i, 1); // last argument can be 0 to turn off
-    //  }
+
+    // Blink the light
     if ((sec % 2) == 0) {
       digitalWrite(LED_BUILTIN, HIGH);
     } else {
       digitalWrite(LED_BUILTIN, LOW);
     }
-//    Flip.Disc_7Seg(2, 7, (sec % 2));
-//    Flip.Disc_7Seg(3, 17, (sec % 2));
+    // Uncomment these lines to flip two discs in the middle every second.
+    // Flip.Disc_7Seg(2, 7, (sec % 2));
+    // Flip.Disc_7Seg(3, 17, (sec % 2));
     
     Serial.print("updated sec. was: ");
     Serial.print(last_sec);
