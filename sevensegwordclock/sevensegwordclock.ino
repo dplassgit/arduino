@@ -133,6 +133,10 @@ void loopOrig() {
   populateTimeStringAsWords(now);
   display.showTextScroll(dateTimeString);
   Serial.println(dateTimeString);
+
+  populateDateAsWords(now);
+  display.showTextScroll(dateTimeString);
+  Serial.println(dateTimeString);
 }
 
 void loop2() {
@@ -231,6 +235,72 @@ void populateTimeStringAsWords(struct tm * dt) {
   strcpy(&dateTimeString[numSpace], temp);
   dateTimeString[numSpace + strlen(temp)] = ' ';
   dateTimeString[len] = 0;
+}
+
+// Sun Jan 18
+void populateDateAsWords(struct tm * dt) {
+  const char *separator = " ";
+
+  const char *dayStr = getDay(dt->tm_wday);
+  const char *monthStr = getMonth(dt->tm_mon);
+
+  char temp[BUFFER_SIZE];
+  snprintf_P(temp,
+             countof(temp),
+             PSTR("%s%s%s%s%u"),
+             dayStr,
+             separator,
+             monthStr,
+             separator,
+             dt->tm_mday
+            );
+  // Figure out how many spaces to add to the beginning and end of the string;
+  // the string can be up to BUFFER_SIZE long, and have at most NUM_DIGITS spaces
+  // at the beginning and end.
+  int numSpace = 0;
+  int len = strlen(temp);
+  // I should math the shit out of this
+  while (len < BUFFER_SIZE && numSpace < NUM_DIGITS) {
+    numSpace++;
+    len += 2;
+  }
+  // Clear the final destination; copy the temporary string into the right
+  // spot, then fix the end-of-string marker.
+  memset(dateTimeString, ' ', BUFFER_SIZE);
+  strcpy(&dateTimeString[numSpace], temp);
+  dateTimeString[numSpace + strlen(temp)] = ' ';
+  dateTimeString[len] = 0;
+}
+
+const char *getDay(int day) {
+  switch (day) {
+    case 0: return "Sun";
+    case 1: return "Mon";
+    case 2: return "Tue";
+    case 3: return "Wed";
+    case 4: return "Thu";
+    case 5: return "Fri";
+    case 6: return "Sat";
+    default: return "";
+  }
+}
+
+const char *getMonth(int mon) {
+  switch (mon) {
+    case 0: return "Jan";
+    case 1: return "Feb";
+    case 2: return "MAr";
+    case 3: return "Apr";
+    case 4: return "May";
+    case 5: return "Jun";
+    case 6: return "Jul";
+    case 7: return "Aug";
+    case 8: return "Sep";
+    case 9: return "Oct";
+    case 10: return "Nov";
+    case 11: return "Dec";
+    default: return "";
+  }
 }
 
 const char *getHour(int hour) {
