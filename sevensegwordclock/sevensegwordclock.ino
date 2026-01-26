@@ -29,7 +29,7 @@ const byte clockPin = D3;
 LEDDisplayDriver display(dataPin, clockPin, loadPin, true, NUM_DIGITS);
 
 // Printing to the display.
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 200
 char dateTimeString[BUFFER_SIZE];
 
 
@@ -202,33 +202,38 @@ void populateTimeStringAsWords(struct tm * dt) {
   if (minute >= 43) {
     hour++;
   }
+  // Can we replace this with a literal in the format string?
   const char *separator = " ";
   const char *hourStr = getHour(hour);
   const char *minuteStr = getMinute(minute);
   char temp[BUFFER_SIZE];
 
-  if (minute >= 58 || minute <= 2 || (minute >= 33 && minute <= 42)) {
-    // swap; instead of "O'clock Ten" show "Ten O'clock".
-    // similarly, 33 through 42 are "hour thirty five" and "hour forty"
-    const char *swaptemp; swaptemp = hourStr; hourStr = minuteStr; minuteStr = swaptemp;
-  }
   snprintf_P(temp,
              countof(temp),
              PSTR("%s%s%s"),
-             minuteStr,
-             separator,
              hourStr
+             separator,
+             minuteStr,
             );
   // Figure out how many spaces to add to the beginning and end of the string;
   // the string can be up to BUFFER_SIZE long, and have at most NUM_DIGITS spaces
   // at the beginning and end.
   int numSpace = 0;
   int len = strlen(temp);
-  // I should math the shit out of this
-  while (len < BUFFER_SIZE && numSpace < NUM_DIGITS) {
-    numSpace++;
-    len += 2;
+  // Gemini mathed this for me:
+  if (len < BUFFER_SIZE) {
+    // Calculate how many +2 steps fit in the remaining buffer
+    numSpace = (BUFFER_SIZE - len + 1) / 2;
+    
+    // Cap it by the maximum allowed digits
+    if (numSpace > NUM_DIGITS) {
+      numSpace = NUM_DIGITS;
+    }
   }
+
+  // Update the final length
+  len += (numSpace * 2);
+
   // Clear the final destination; copy the temporary string into the right
   // spot, then fix the end-of-string marker.
   memset(dateTimeString, ' ', BUFFER_SIZE);
@@ -289,7 +294,7 @@ const char *getMonth(int mon) {
   switch (mon) {
     case 0: return "Jan";
     case 1: return "Feb";
-    case 2: return "MAr";
+    case 2: return "Mar";
     case 3: return "Apr";
     case 4: return "May";
     case 5: return "Jun";
@@ -323,18 +328,66 @@ const char *getHour(int hour) {
 
 const char *getMinute(int minute) {
   switch (minute) {
-    case 58: case 59: case 0:  case 1:  case 2: return "O'clocK"; // needs hour before
-    case 3:  case 4:  case 5:  case 6:  case 7: return "Five Past"; // needs hour afterwards
-    case 8:  case 9:  case 10: case 11: case 12: return "Ten Past"; // needs hour afterwards
-    case 13: case 14: case 15: case 16: case 17: return "a Quarter Past"; // needs hour afterwards
-    case 18: case 19: case 20: case 21: case 22: return "20 Past"; // needs hour afterwards
-    case 23: case 24: case 25: case 26: case 27: return "25 Past"; // needs hour afterwards
-    case 28: case 29: case 30: case 31: case 32: return "Half Past"; // needs hour afterwards
-    case 33: case 34: case 35: case 36: case 37: return "Thirty five"; // needs hour before
-    case 38: case 39: case 40: case 41: case 42: return "Forty"; // needs hour before
-    case 43: case 44: case 45: case 46: case 47: return "a Quarter to";  // needs hour afterwards
-    case 48: case 49: case 50: case 51: case 52: return "Ten to"; // needs hour afterwards
-    case 53: case 54: case 55: case 56: case 57: return "Five to"; // needs hour afterwards
-    default: return "";
+    case 0: return "O'clocK";
+    case 1: return "oh-one";
+    case 2: return "oh-one-ish";
+    case 3: return "oh-three";
+    case 4: return "oh-four";
+    case 5: return "oh-five";
+    case 6: return "oh-five-ish";
+    case 7: return "oh-seven";
+    case 8: return "oh-eight";
+    case 9: return "oh-nine";
+    case 10: return "ten";
+    case 11: return "eleven";
+    case 12: return "eleven-ish";
+    case 13: return "thirteen";
+    case 14: return "fourteen";
+    case 15: return "fifteen";
+    case 16: return "fifteen-ish";
+    case 17: return "seventeen";
+    case 18: return "eighteen";
+    case 19: return "nineteen";
+    case 20: return "20";
+    case 21: return "21";
+    case 22: return "22";
+    case 23: return "23";
+    case 24: return "24";
+    case 25: return "25";
+    case 26: return "26";
+    case 27: return "27";
+    case 28: return "28";
+    case 29: return "29";
+    case 30: return "thirty";
+    case 31: return "thirty one";
+    case 32: return "thirty one-ish";
+    case 33: return "thirty three";
+    case 34: return "thirty four";
+    case 35: return "thirty five";
+    case 36: return "thirty five-ish";
+    case 37: return "thirty seven";
+    case 38: return "thirty eight";
+    case 39: return "thirty nine";
+    case 40: return "forty";
+    case 41: return "forty one";
+    case 42: return "forty two";
+    case 43: return "forty three";
+    case 44: return "forty four";
+    case 45: return "forty five";
+    case 46: return "forth five-ish";
+    case 47: return "forty seven";
+    case 48: return "forty eight";
+    case 49: return "forty nine";
+    case 50: return "fifty";
+    case 51: return "fifty one";
+    case 52: return "fifty one-ish";
+    case 53: return "fifty three";
+    case 54: return "fifty four";
+    case 55: return "fifty five";
+    case 56: return "fifty five-ish";
+    case 57: return "fifty seven";
+    case 58: return "fifty eight";
+    case 59: return "fifty nine";
+    default: return ""; 
   }
 }
